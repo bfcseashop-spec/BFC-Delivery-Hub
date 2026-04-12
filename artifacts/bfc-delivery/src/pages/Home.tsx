@@ -13,6 +13,17 @@ import {
 import type { Restaurant } from "@workspace/api-client-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+
+interface PromoBanner {
+  id: number; title: string; subtitle: string; badge: string;
+  gradient: string; emoji: string; isActive: boolean; displayOrder: number;
+}
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+function landingApi(path: string) {
+  return fetch(`${BASE}/api${path}`, { credentials: "include" }).then(r => r.json());
+}
 
 const CATEGORY_COLORS: Record<string, string> = {
   khmer: "from-orange-400 to-orange-600",
@@ -38,12 +49,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
   vegetarian: "🥗",
 };
 
-const DEAL_BANNERS = [
-  { id: 1, bg: "bg-gradient-to-br from-orange-500 to-red-500", title: "Free Delivery", subtitle: "On every order, always", badge: "Always", emoji: "🛵" },
-  { id: 2, bg: "bg-gradient-to-br from-yellow-400 to-orange-400", title: "Morning Deal", subtitle: "Breakfast in 20 mins", badge: "Before 10 AM", emoji: "🌅" },
-  { id: 3, bg: "bg-gradient-to-br from-purple-500 to-pink-500", title: "Night Bites", subtitle: "Open 24 hours a day", badge: "24/7", emoji: "🌙" },
-  { id: 4, bg: "bg-gradient-to-br from-teal-500 to-green-500", title: "New Arrivals", subtitle: "Discover fresh spots", badge: "New", emoji: "⭐" },
-];
 
 type SortOption = "relevance" | "fastest" | "distance" | "top-rated";
 
@@ -108,6 +113,16 @@ export default function Home() {
     {},
     { query: { queryKey: getListRestaurantsQueryKey({}) } }
   );
+
+  const { data: dealBanners = [] } = useQuery<PromoBanner[]>({
+    queryKey: ["landing-banners"],
+    queryFn: () => landingApi("/landing/banners"),
+  });
+
+  const { data: pageSettings = {} } = useQuery<Record<string, string>>({
+    queryKey: ["landing-settings"],
+    queryFn: () => landingApi("/landing/settings"),
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -400,24 +415,28 @@ export default function Home() {
               </section>
 
               {/* Daily Deals */}
-              <section>
-                <h2 className="text-lg font-black text-zinc-900 mb-3">Your daily deals</h2>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-                  {DEAL_BANNERS.map((deal) => (
-                    <Link key={deal.id} href="/restaurants" className="shrink-0 w-48">
-                      <div className={`${deal.bg} rounded-xl p-4 h-24 flex flex-col justify-between cursor-pointer hover:opacity-95 transition`}>
-                        <span className="text-white/90 text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full w-fit">
-                          {deal.badge}
-                        </span>
-                        <div>
-                          <p className="text-white font-black text-sm leading-tight">{deal.title}</p>
-                          <p className="text-white/80 text-xs mt-0.5">{deal.subtitle}</p>
+              {dealBanners.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-black text-zinc-900 mb-3">
+                    {pageSettings.deals_section_title || "Your daily deals"}
+                  </h2>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                    {dealBanners.map((deal) => (
+                      <Link key={deal.id} href="/restaurants" className="shrink-0 w-48">
+                        <div className={`${deal.gradient} rounded-xl p-4 h-24 flex flex-col justify-between cursor-pointer hover:opacity-95 transition`}>
+                          <span className="text-white/90 text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full w-fit">
+                            {deal.badge}
+                          </span>
+                          <div>
+                            <p className="text-white font-black text-sm leading-tight">{deal.title}</p>
+                            <p className="text-white/80 text-xs mt-0.5">{deal.subtitle}</p>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Restaurants */}
               <section>

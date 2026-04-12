@@ -21,6 +21,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminRestaurants from "@/pages/admin/AdminRestaurants";
 import AdminMenuItems from "@/pages/admin/AdminMenuItems";
+import AdminLandingPage from "@/pages/admin/AdminLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/restaurants" component={AdminRestaurants} />
       <Route path="/admin/menu-items" component={AdminMenuItems} />
+      <Route path="/admin/landing-page" component={AdminLandingPage} />
 
       <Route component={NotFound} />
     </Switch>

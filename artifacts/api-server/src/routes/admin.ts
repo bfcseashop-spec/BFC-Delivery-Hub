@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable } from "@workspace/db";
-import { eq, and, type SQL } from "drizzle-orm";
+import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable } from "@workspace/db";
+import { eq, and, asc, type SQL } from "drizzle-orm";
 import {
   AdminListOrdersResponse,
   AdminUpdateOrderStatusBody,
@@ -243,6 +243,101 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     todayOrders,
     totalMenuItems: menuItems.length,
   }));
+});
+
+// ---- Promo Banners CRUD ----
+
+router.get("/admin/landing/banners", async (_req, res): Promise<void> => {
+  const banners = await db.select().from(promoBannersTable).orderBy(asc(promoBannersTable.displayOrder));
+  res.json(banners);
+});
+
+router.post("/admin/landing/banners", async (req, res): Promise<void> => {
+  const { title, subtitle, badge, gradient, emoji, isActive, displayOrder } = req.body;
+  if (!title) { res.status(400).json({ error: "title is required" }); return; }
+  const [banner] = await db.insert(promoBannersTable).values({ title, subtitle: subtitle ?? "", badge: badge ?? "", gradient: gradient ?? "bg-gradient-to-br from-orange-500 to-red-500", emoji: emoji ?? "🎉", isActive: isActive ?? true, displayOrder: displayOrder ?? 0 }).returning();
+  res.status(201).json(banner);
+});
+
+router.patch("/admin/landing/banners/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { title, subtitle, badge, gradient, emoji, isActive, displayOrder } = req.body;
+  const updates: Partial<typeof promoBannersTable.$inferInsert> = {};
+  if (title != null) updates.title = title;
+  if (subtitle != null) updates.subtitle = subtitle;
+  if (badge != null) updates.badge = badge;
+  if (gradient != null) updates.gradient = gradient;
+  if (emoji != null) updates.emoji = emoji;
+  if (isActive != null) updates.isActive = isActive;
+  if (displayOrder != null) updates.displayOrder = displayOrder;
+  const [banner] = await db.update(promoBannersTable).set(updates).where(eq(promoBannersTable.id, id)).returning();
+  if (!banner) { res.status(404).json({ error: "Banner not found" }); return; }
+  res.json(banner);
+});
+
+router.delete("/admin/landing/banners/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(promoBannersTable).where(eq(promoBannersTable.id, id));
+  res.sendStatus(204);
+});
+
+// ---- Quick Filters CRUD ----
+
+router.get("/admin/landing/filters", async (_req, res): Promise<void> => {
+  const filters = await db.select().from(quickFiltersTable).orderBy(asc(quickFiltersTable.displayOrder));
+  res.json(filters);
+});
+
+router.post("/admin/landing/filters", async (req, res): Promise<void> => {
+  const { label, filterKey, filterValue, filterType, isActive, displayOrder } = req.body;
+  if (!label || !filterKey) { res.status(400).json({ error: "label and filterKey are required" }); return; }
+  const [filter] = await db.insert(quickFiltersTable).values({ label, filterKey, filterValue: filterValue ?? "true", filterType: filterType ?? "boolean", isActive: isActive ?? true, displayOrder: displayOrder ?? 0 }).returning();
+  res.status(201).json(filter);
+});
+
+router.patch("/admin/landing/filters/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { label, filterKey, filterValue, filterType, isActive, displayOrder } = req.body;
+  const updates: Partial<typeof quickFiltersTable.$inferInsert> = {};
+  if (label != null) updates.label = label;
+  if (filterKey != null) updates.filterKey = filterKey;
+  if (filterValue != null) updates.filterValue = filterValue;
+  if (filterType != null) updates.filterType = filterType;
+  if (isActive != null) updates.isActive = isActive;
+  if (displayOrder != null) updates.displayOrder = displayOrder;
+  const [filter] = await db.update(quickFiltersTable).set(updates).where(eq(quickFiltersTable.id, id)).returning();
+  if (!filter) { res.status(404).json({ error: "Filter not found" }); return; }
+  res.json(filter);
+});
+
+router.delete("/admin/landing/filters/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(quickFiltersTable).where(eq(quickFiltersTable.id, id));
+  res.sendStatus(204);
+});
+
+// ---- Page Settings ----
+
+router.get("/admin/landing/settings", async (_req, res): Promise<void> => {
+  const settings = await db.select().from(pageSettingsTable);
+  const map: Record<string, string> = {};
+  for (const s of settings) map[s.key] = s.value;
+  res.json(map);
+});
+
+router.patch("/admin/landing/settings", async (req, res): Promise<void> => {
+  const entries = Object.entries(req.body as Record<string, string>);
+  for (const [key, value] of entries) {
+    await db.insert(pageSettingsTable).values({ key, value }).onConflictDoUpdate({ target: pageSettingsTable.key, set: { value } });
+  }
+  const all = await db.select().from(pageSettingsTable);
+  const map: Record<string, string> = {};
+  for (const s of all) map[s.key] = s.value;
+  res.json(map);
 });
 
 export default router;

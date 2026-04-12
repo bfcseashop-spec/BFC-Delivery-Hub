@@ -6,6 +6,7 @@ import restaurantsRouter from "./restaurants";
 import menuRouter from "./menu";
 import ordersRouter from "./orders";
 import adminRouter from "./admin";
+import landingRouter from "./landing";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(restaurantsRouter);
 router.use(menuRouter);
 router.use(ordersRouter);
 router.use(adminRouter);
+router.use(landingRouter);
 
 export default router;

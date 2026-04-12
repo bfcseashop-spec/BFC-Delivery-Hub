@@ -1,0 +1,91 @@
+customizable Landing Page admin panel. Include every function needed so non-technical admins can Add / Edit / Delete and configure all landing-page features, filters, banners, and content blocks. Requirements must cover UI, content types, targeting, scheduling, permissions, integrations, preview, and analytics.
+
+Requirements (use in your task/ticket or give to an AI/developer):
+
+Content blocks & layout
+
+Add/Edit/Delete/Reorder blocks (drag-and-drop): Hero, Promo Banner, Carousel, Category tiles, Featured items, Offers grid, Cuisines grid, Dietary tags, Quick filters, Testimonials, FAQ, CTA buttons, Footer.
+Block settings: title, subtitle, description, background (image/color/video), padding/margin, visibility toggle, custom CSS class.
+Pre-built templates and ability to save custom templates.
+Hero & banners
+
+Manage hero: image/video, headline, subheadline, CTA text & URL, overlay, alignment, schedule start/end, A/B test variants.
+Promo/discount banners: percentage/fixed amount, coupon code, validity, min order, targeted segments (geography, user groups), visibility rules, stacking rules.
+Filters & Quick-filters
+
+Create/Edit/Delete filters and quick-filters (e.g., “Open Now”, “Free delivery up to X”, “Top rated”, “Under $Y”).
+Define filter type: boolean, range, multi-select, single-select, keyword.
+Map filters to data sources (menu attributes, cuisine, dietary, vendor tags, delivery fee, rating, hours).
+Order and group filters; enable/disable for desktop/mobile.
+Categories, Cuisines & Dietary
+
+CRUD for categories, cuisine entries, dietary tags (e.g., Vegan, Halal, Gluten-free).
+Upload icons/images, set display name, alias/slug, SEO title/meta description.
+Assign priority, featured flag, and visibility per channel (web/app).
+Offers & Promotions
+
+CRUD offers: title, description, visual, start/end time, repetition schedule, coupon code, eligibility (customer segments, min order, targeted geofence), combine rules.
+Offer placement settings (hero, banner, category, slot priority).
+Dynamic banners: auto-populate top offers based on rules (highest discount, expiring soon).
+Favorites & Personalized sections
+
+Configure “Your favourite cuisines” logic: enable algorithmic (user history) or manual curated lists.
+Admin override: create curated favorite lists per segment.
+Toggle personalization on/off and fallback content.
+Badges & Info tags
+
+CRUD badges (e.g., “Open 24/7”, “Free delivery up to X”, “New”, “Popular”).
+Rules engine to attach badges based on vendor attributes, schedule, or offers.
+Styling options and position selection.
+Product / Item display
+
+Control list/grid view: card layout, columns, item metadata (price, rating, delivery time, badges).
+Click-to-edit product display mapping (which product fields show).
+Enable inline editing of featured items from admin.
+Search & SEO
+
+Edit landing page meta title, meta description, canonical, structured data.
+Configure search suggestions, promoted search keywords, synonym rules.
+Targeting, Rules & Scheduling
+
+Target content by geolocation, user segment, device, channel, time-of-day, campaign parameters.
+Schedule blocks/offers with start/end and recurring rules.
+Priority & fallback order when multiple rules match.
+Preview & Publish workflow
+
+Live preview (desktop/tablet/mobile) and test user preview links.
+Save Draft, Publish, Rollback to previous version.
+Publish scheduling and staged rollout (percentage of users).
+Permissions & Audit
+
+Role-based access: page editor, content manager, marketer, publisher, admin.
+Field-level permissions (e.g., can edit offers but not publish).
+Activity log for all changes with user and timestamp; version history and restore.
+Integration & Data
+
+Connectors: products/items API, vendor API, promotions engine, payment gateway, shipping/ETA API, user profile service.
+Webhooks and API endpoints for retrieving/setting landing content.
+Support multi-store/multi-region content with fallback.
+Personalization & A/B testing
+
+Build A/B test module for blocks and hero variants; track impressions, clicks, conversions; auto-winner or manual selection.
+Personalization rules based on user behavior, past orders, and segments.
+Analytics & Reporting
+
+Block-level metrics: impressions, CTR, conversions, revenue attributed.
+Exportable reports and dashboards; link events to analytics provider (GA4/Segment).
+Event naming conventions for tracking.
+Localization & Accessibility
+
+Multi-language content support per block with locale fallback.
+RTL support, date/time locale, currency formatting.
+WCAG accessibility checklist: alt text, keyboard nav, color contrast.
+Performance & caching
+
+CDN integration, cache invalidation on publish.
+Lazy load images, responsive image sizes, and critical CSS options.
+Admin UX extras
+
+Bulk actions (enable/disable, delete, schedule) for blocks/items.
+Searchable content list, tags, and filters within admin.
+Inline help/tooltips and preview data toggles (use real or mock data).

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Store, ClipboardList, UtensilsCrossed, LogOut } from "lucide-react";
+import { LayoutDashboard, Store, ClipboardList, UtensilsCrossed, LogOut, LayoutTemplate } from "lucide-react";
 import { useEffect } from "react";
 
 export function AdminLayout({ children, title }: { children: React.ReactNode, title: string }) {
@@ -47,6 +47,11 @@ export function AdminLayout({ children, title }: { children: React.ReactNode, ti
           <Link href="/admin/menu-items">
             <Button variant="ghost" className="w-full justify-start text-zinc-300 hover:text-white hover:bg-zinc-800 font-medium">
               <UtensilsCrossed className="w-4 h-4 mr-3" /> Menu Items
+            </Button>
+          </Link>
+          <Link href="/admin/landing-page">
+            <Button variant="ghost" className="w-full justify-start text-zinc-300 hover:text-white hover:bg-zinc-800 font-medium">
+              <LayoutTemplate className="w-4 h-4 mr-3" /> Landing Page
             </Button>
           </Link>
         </nav>
