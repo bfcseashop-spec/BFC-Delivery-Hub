@@ -3,16 +3,15 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, MapPin, Search } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, Star } from "lucide-react";
 import {
   useListCategories,
-  useListFeaturedRestaurants,
   useListRestaurants,
   getListCategoriesQueryKey,
-  getListFeaturedRestaurantsQueryKey,
   getListRestaurantsQueryKey,
 } from "@workspace/api-client-react";
-import { useState } from "react";
+import type { Restaurant } from "@workspace/api-client-react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -40,219 +39,433 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 const DEAL_BANNERS = [
-  {
-    id: 1,
-    bg: "bg-gradient-to-r from-orange-500 to-red-500",
-    title: "Free Delivery",
-    subtitle: "On every order, every time",
-    badge: "Always",
-    emoji: "🛵",
-  },
-  {
-    id: 2,
-    bg: "bg-gradient-to-r from-yellow-400 to-orange-400",
-    title: "Order before 10 AM",
-    subtitle: "Get breakfast delivered in 20 mins",
-    badge: "Morning Deal",
-    emoji: "🌅",
-  },
-  {
-    id: 3,
-    bg: "bg-gradient-to-r from-purple-500 to-pink-500",
-    title: "Night Bites",
-    subtitle: "Open 24 hours, craving solved anytime",
-    badge: "24/7",
-    emoji: "🌙",
-  },
-  {
-    id: 4,
-    bg: "bg-gradient-to-r from-green-500 to-teal-500",
-    title: "New Restaurants",
-    subtitle: "Discover fresh spots near you",
-    badge: "New",
-    emoji: "⭐",
-  },
+  { id: 1, bg: "bg-gradient-to-br from-orange-500 to-red-500", title: "Free Delivery", subtitle: "On every order, always", badge: "Always", emoji: "🛵" },
+  { id: 2, bg: "bg-gradient-to-br from-yellow-400 to-orange-400", title: "Morning Deal", subtitle: "Breakfast in 20 mins", badge: "Before 10 AM", emoji: "🌅" },
+  { id: 3, bg: "bg-gradient-to-br from-purple-500 to-pink-500", title: "Night Bites", subtitle: "Open 24 hours a day", badge: "24/7", emoji: "🌙" },
+  { id: 4, bg: "bg-gradient-to-br from-teal-500 to-green-500", title: "New Arrivals", subtitle: "Discover fresh spots", badge: "New", emoji: "⭐" },
 ];
 
+type SortOption = "relevance" | "fastest" | "distance" | "top-rated";
+
+function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
+  return (
+    <label className="flex items-center gap-2.5 cursor-pointer group py-0.5">
+      <div
+        onClick={onChange}
+        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${
+          checked ? "bg-primary border-primary" : "border-zinc-300 group-hover:border-zinc-400"
+        }`}
+      >
+        {checked && (
+          <svg viewBox="0 0 12 12" className="w-2.5 h-2.5 fill-white">
+            <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      <span className="text-sm text-zinc-700 group-hover:text-zinc-900">{label}</span>
+    </label>
+  );
+}
+
+function Radio({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
+  return (
+    <label className="flex items-center gap-2.5 cursor-pointer group py-0.5">
+      <div
+        onClick={onChange}
+        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition ${
+          checked ? "border-primary" : "border-zinc-300 group-hover:border-zinc-400"
+        }`}
+      >
+        {checked && <div className="w-2 h-2 rounded-full bg-primary" />}
+      </div>
+      <span className="text-sm text-zinc-700 group-hover:text-zinc-900">{label}</span>
+    </label>
+  );
+}
+
 export default function Home() {
-  const [search, setSearch] = useState("");
   const [, setLocation] = useLocation();
+  const [search, setSearch] = useState("");
+  const [cuisineSearch, setCuisineSearch] = useState("");
+  const [showAllCuisines, setShowAllCuisines] = useState(false);
+
+  // Filters state
+  const [sortBy, setSortBy] = useState<SortOption>("relevance");
+  const [filterTopRated, setFilterTopRated] = useState(false);
+  const [filterFreeDelivery] = useState(true); // always free — pre-checked & locked
+  const [filterVouchers, setFilterVouchers] = useState(false);
+  const [filterDeals, setFilterDeals] = useState(false);
+  const [selectedCuisines, setSelectedCuisines] = useState<number[]>([]);
+  const [filterVegetarian, setFilterVegetarian] = useState(false);
+  const [filterHalal, setFilterHalal] = useState(false);
+  const [priceFilter, setPriceFilter] = useState<string | null>(null);
 
   const { data: categories, isLoading: isCategoriesLoading } = useListCategories({
     query: { queryKey: getListCategoriesQueryKey() },
   });
 
-  const { data: featuredRestaurants, isLoading: isFeaturedLoading } = useListFeaturedRestaurants({
-    query: { queryKey: getListFeaturedRestaurantsQueryKey() },
-  });
-
-  const { data: allRestaurants, isLoading: isAllLoading } = useListRestaurants(
+  const { data: restaurants, isLoading: isRestaurantsLoading } = useListRestaurants(
     {},
     { query: { queryKey: getListRestaurantsQueryKey({}) } }
   );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (search.trim()) {
-      setLocation(`/restaurants?search=${encodeURIComponent(search)}`);
-    } else {
-      setLocation("/restaurants");
-    }
+    if (search.trim()) setLocation(`/restaurants?search=${encodeURIComponent(search)}`);
+    else setLocation("/restaurants");
   };
+
+  const toggleCuisine = (id: number) => {
+    setSelectedCuisines((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+  };
+
+  const filteredRestaurants = useMemo(() => {
+    if (!restaurants) return [];
+    let result = [...restaurants];
+
+    if (selectedCuisines.length > 0) {
+      result = result.filter((r) => selectedCuisines.includes(r.categoryId));
+    }
+    if (filterTopRated) {
+      result = result.filter((r) => r.rating >= 4.0);
+    }
+    if (filterVegetarian) {
+      result = result.filter((r) =>
+        r.name.toLowerCase().includes("veg") || r.description?.toLowerCase().includes("veg")
+      );
+    }
+
+    switch (sortBy) {
+      case "fastest":
+        result.sort((a, b) => {
+          const aMin = parseInt(a.deliveryTime || "99");
+          const bMin = parseInt(b.deliveryTime || "99");
+          return aMin - bMin;
+        });
+        break;
+      case "top-rated":
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+      case "distance":
+        result.sort((a, b) => a.id - b.id);
+        break;
+      default:
+        result.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+    }
+
+    return result;
+  }, [restaurants, selectedCuisines, filterTopRated, filterVegetarian, sortBy]);
+
+  const visibleCuisines = useMemo(() => {
+    if (!categories) return [];
+    const filtered = cuisineSearch
+      ? categories.filter((c) => c.name.toLowerCase().includes(cuisineSearch.toLowerCase()))
+      : categories;
+    return showAllCuisines ? filtered : filtered.slice(0, 8);
+  }, [categories, cuisineSearch, showAllCuisines]);
+
+  const featuredRestaurants = filteredRestaurants.filter((r) => r.isFeatured);
+  const allListRestaurants = filteredRestaurants;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
 
-      <main className="flex-1">
-        {/* Search Bar Row */}
-        <div className="bg-white border-b border-zinc-100 px-4 py-3">
-          <div className="max-w-5xl mx-auto">
-            <form onSubmit={handleSearch} className="flex items-center gap-2 bg-zinc-100 rounded-xl px-4 py-2.5">
-              <Search className="w-4 h-4 text-zinc-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Search for restaurants, cuisines, and dishes"
-                className="flex-1 bg-transparent text-sm outline-none text-zinc-700 placeholder:text-zinc-400"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </form>
+      {/* Delivery / Pickup tabs */}
+      <div className="border-b border-zinc-200 bg-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center gap-0">
+            <button className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-primary border-b-2 border-primary">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-5h14v5z"/></svg>
+              Delivery
+            </button>
+            <button className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-zinc-500 hover:text-zinc-700 border-b-2 border-transparent">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
+              Pick-up
+            </button>
+            <button className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-zinc-500 hover:text-zinc-700 border-b-2 border-transparent">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+              Shops
+            </button>
+            <div className="ml-auto flex items-center">
+              <form onSubmit={handleSearch} className="flex items-center gap-2 bg-zinc-100 rounded-lg px-3 py-2">
+                <Search className="w-4 h-4 text-zinc-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search for restaurants, cuisines, and dishes"
+                  className="bg-transparent text-sm outline-none text-zinc-700 placeholder:text-zinc-400 w-64"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </form>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="max-w-5xl mx-auto px-4 py-6 space-y-10">
+      <main className="flex-1">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex gap-6">
 
-          {/* Promo Banner */}
-          <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 flex items-center justify-between px-8 py-6 gap-4">
-            <div>
-              <h2 className="text-2xl font-black text-zinc-900 leading-tight mb-2">
-                Free delivery on<br />every order
-              </h2>
-              <p className="text-zinc-500 text-sm mb-4">No minimum. No hidden fees. 24 hours a day.</p>
-              <Link href="/restaurants">
-                <button className="bg-primary text-white font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-primary/90 transition">
-                  Order now
-                </button>
-              </Link>
-            </div>
-            <div className="text-8xl shrink-0 select-none hidden sm:block">🛵</div>
-          </div>
+            {/* LEFT SIDEBAR — Filters */}
+            <aside className="w-56 shrink-0">
+              <div className="sticky top-24 space-y-5">
+                <h2 className="text-base font-black text-zinc-900">Filters</h2>
 
-          {/* Your favourite cuisines */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-zinc-900">Your favourite cuisines</h2>
-              <Link href="/restaurants" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                See all <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+                {/* Sort by */}
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Sort by</p>
+                  <div className="space-y-1">
+                    <Radio checked={sortBy === "relevance"} onChange={() => setSortBy("relevance")} label="Relevance" />
+                    <Radio checked={sortBy === "fastest"} onChange={() => setSortBy("fastest")} label="Fastest delivery" />
+                    <Radio checked={sortBy === "distance"} onChange={() => setSortBy("distance")} label="Distance" />
+                    <Radio checked={sortBy === "top-rated"} onChange={() => setSortBy("top-rated")} label="Top rated" />
+                  </div>
+                </div>
 
-            <div className="flex gap-5 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
-              {isCategoriesLoading
-                ? Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="shrink-0 flex flex-col items-center gap-2">
-                      <Skeleton className="w-16 h-16 rounded-full" />
-                      <Skeleton className="w-14 h-3 rounded" />
-                    </div>
-                  ))
-                : categories?.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      href={`/restaurants?category=${cat.id}`}
-                      className="shrink-0 flex flex-col items-center gap-2 group cursor-pointer"
+                {/* Quick filters */}
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Quick filters</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setFilterTopRated(!filterTopRated)}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                        filterTopRated
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+                      }`}
                     >
-                      <div
-                        className={`w-16 h-16 rounded-full bg-gradient-to-br ${
-                          CATEGORY_COLORS[cat.slug] ?? "from-zinc-400 to-zinc-600"
-                        } flex items-center justify-center text-2xl shadow-sm group-hover:scale-105 transition-transform`}
+                      <Star className="w-3 h-3" /> Ratings 4+
+                    </button>
+                    <button className="px-3 py-1 rounded-full text-xs font-semibold border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 transition">
+                      Super restaurant
+                    </button>
+                  </div>
+                </div>
+
+                {/* Offers */}
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Offers</p>
+                  <div className="space-y-1">
+                    <Checkbox checked={true} onChange={() => {}} label="Free delivery" />
+                    <Checkbox checked={filterVouchers} onChange={() => setFilterVouchers(!filterVouchers)} label="Accepts vouchers" />
+                    <Checkbox checked={filterDeals} onChange={() => setFilterDeals(!filterDeals)} label="Deals" />
+                  </div>
+                </div>
+
+                {/* Cuisines */}
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Cuisines</p>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="Search for cuisines"
+                      className="w-full pl-8 pr-3 py-1.5 border border-zinc-200 rounded-md text-xs outline-none focus:border-primary"
+                      value={cuisineSearch}
+                      onChange={(e) => setCuisineSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    {isCategoriesLoading
+                      ? Array.from({ length: 5 }).map((_, i) => (
+                          <div key={i} className="h-5 bg-zinc-100 rounded animate-pulse" />
+                        ))
+                      : visibleCuisines.map((cat) => (
+                          <Checkbox
+                            key={cat.id}
+                            checked={selectedCuisines.includes(cat.id)}
+                            onChange={() => toggleCuisine(cat.id)}
+                            label={cat.name}
+                          />
+                        ))}
+                  </div>
+                  {categories && categories.length > 8 && (
+                    <button
+                      onClick={() => setShowAllCuisines(!showAllCuisines)}
+                      className="flex items-center gap-1 text-xs font-semibold text-zinc-500 hover:text-zinc-700 mt-2"
+                    >
+                      {showAllCuisines ? "Show less" : "Show more"}{" "}
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAllCuisines ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Dietary */}
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Dietary</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setFilterVegetarian(!filterVegetarian)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                        filterVegetarian
+                          ? "bg-green-500 text-white border-green-500"
+                          : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+                      }`}
+                    >
+                      Vegetarian
+                    </button>
+                    <button
+                      onClick={() => setFilterHalal(!filterHalal)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                        filterHalal
+                          ? "bg-green-500 text-white border-green-500"
+                          : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+                      }`}
+                    >
+                      Halal
+                    </button>
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Price</p>
+                  <div className="flex gap-2">
+                    {["$", "$$", "$$$"].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPriceFilter(priceFilter === p ? null : p)}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold border transition ${
+                          priceFilter === p
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+                        }`}
                       >
-                        {CATEGORY_EMOJI[cat.slug] ?? "🍱"}
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {/* MAIN CONTENT */}
+            <div className="flex-1 min-w-0 space-y-8">
+
+              {/* Promo Banner */}
+              <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 flex items-center justify-between px-8 py-5 gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1">
+                    Sign up for free delivery<br />on your first order
+                  </h2>
+                  <Link href="/signup">
+                    <button className="mt-3 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
+                      Sign up
+                    </button>
+                  </Link>
+                </div>
+                <div className="text-7xl shrink-0 select-none hidden sm:block">🛵</div>
+              </div>
+
+              {/* Your favourite cuisines */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-black text-zinc-900">Your favourite cuisines</h2>
+                  <Link href="/restaurants" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                    See all <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                  {isCategoriesLoading
+                    ? Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="shrink-0 flex flex-col items-center gap-2">
+                          <Skeleton className="w-20 h-20 rounded-xl" />
+                          <Skeleton className="w-14 h-3 rounded" />
+                        </div>
+                      ))
+                    : categories?.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => toggleCuisine(cat.id)}
+                          className="shrink-0 flex flex-col items-center gap-2 group cursor-pointer"
+                        >
+                          <div
+                            className={`w-20 h-20 rounded-xl bg-gradient-to-br ${
+                              CATEGORY_COLORS[cat.slug] ?? "from-zinc-400 to-zinc-600"
+                            } flex items-center justify-center text-3xl shadow-sm group-hover:scale-105 transition-transform ${
+                              selectedCuisines.includes(cat.id) ? "ring-2 ring-primary ring-offset-2" : ""
+                            }`}
+                          >
+                            {CATEGORY_EMOJI[cat.slug] ?? "🍱"}
+                          </div>
+                          <span className="text-xs font-semibold text-primary text-center w-20 truncate">
+                            {cat.name}
+                          </span>
+                        </button>
+                      ))}
+                </div>
+              </section>
+
+              {/* Daily Deals */}
+              <section>
+                <h2 className="text-lg font-black text-zinc-900 mb-3">Your daily deals</h2>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                  {DEAL_BANNERS.map((deal) => (
+                    <Link key={deal.id} href="/restaurants" className="shrink-0 w-48">
+                      <div className={`${deal.bg} rounded-xl p-4 h-24 flex flex-col justify-between cursor-pointer hover:opacity-95 transition`}>
+                        <span className="text-white/90 text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full w-fit">
+                          {deal.badge}
+                        </span>
+                        <div>
+                          <p className="text-white font-black text-sm leading-tight">{deal.title}</p>
+                          <p className="text-white/80 text-xs mt-0.5">{deal.subtitle}</p>
+                        </div>
                       </div>
-                      <span className="text-xs font-semibold text-primary text-center w-16 truncate">
-                        {cat.name}
-                      </span>
                     </Link>
                   ))}
-            </div>
-          </section>
+                </div>
+              </section>
 
-          {/* Daily Deals */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-zinc-900">Today's deals</h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
-              {DEAL_BANNERS.map((deal) => (
-                <Link key={deal.id} href="/restaurants" className="shrink-0 w-52">
-                  <div className={`${deal.bg} rounded-xl p-4 h-28 flex flex-col justify-between cursor-pointer hover:opacity-95 transition`}>
-                    <span className="text-white/90 text-xs font-bold uppercase tracking-wide bg-white/20 px-2 py-0.5 rounded-full w-fit">
-                      {deal.badge}
-                    </span>
-                    <div>
-                      <p className="text-white font-black text-sm leading-tight">{deal.title}</p>
-                      <p className="text-white/80 text-xs mt-0.5 leading-tight">{deal.subtitle}</p>
-                    </div>
+              {/* Restaurants */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-black text-zinc-900">
+                    {selectedCuisines.length > 0 || filterTopRated || filterVegetarian
+                      ? `Filtered results (${allListRestaurants.length})`
+                      : `Up to free delivery | Open 24/7`}
+                  </h2>
+                </div>
+
+                {isRestaurantsLoading ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="flex flex-col gap-3">
+                        <Skeleton className="aspect-[4/3] rounded-xl w-full" />
+                        <Skeleton className="h-5 w-2/3" />
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ))}
                   </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+                ) : allListRestaurants.length === 0 ? (
+                  <div className="text-center py-16 bg-zinc-50 rounded-xl border border-zinc-100">
+                    <p className="text-zinc-500 mb-3">No restaurants match your filters.</p>
+                    <button
+                      onClick={() => {
+                        setSelectedCuisines([]);
+                        setFilterTopRated(false);
+                        setFilterVegetarian(false);
+                        setFilterHalal(false);
+                        setSortBy("relevance");
+                      }}
+                      className="text-primary font-semibold text-sm hover:underline"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allListRestaurants.map((r) => (
+                      <RestaurantCard key={r.id} restaurant={r} />
+                    ))}
+                  </div>
+                )}
+              </section>
 
-          {/* Featured Restaurants */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-zinc-900">Top picks for you</h2>
-              <Link href="/restaurants" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                See all <ChevronRight className="w-4 h-4" />
-              </Link>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {isFeaturedLoading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex flex-col gap-3">
-                      <Skeleton className="aspect-[4/3] rounded-xl w-full" />
-                      <Skeleton className="h-5 w-2/3" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                  ))
-                : featuredRestaurants?.map((r) => (
-                    <RestaurantCard key={r.id} restaurant={r} />
-                  ))}
-            </div>
-          </section>
-
-          {/* All Restaurants */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-zinc-900">All restaurants near you</h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {isAllLoading
-                ? Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="flex flex-col gap-3">
-                      <Skeleton className="aspect-[4/3] rounded-xl w-full" />
-                      <Skeleton className="h-5 w-2/3" />
-                      <Skeleton className="h-4 w-full" />
-                    </div>
-                  ))
-                : allRestaurants?.map((r) => (
-                    <RestaurantCard key={r.id} restaurant={r} />
-                  ))}
-            </div>
-
-            <div className="mt-6 text-center">
-              <Link href="/restaurants">
-                <button className="border-2 border-zinc-200 text-zinc-700 font-bold text-sm px-8 py-3 rounded-xl hover:border-primary hover:text-primary transition">
-                  View all restaurants
-                </button>
-              </Link>
-            </div>
-          </section>
-
+          </div>
         </div>
       </main>
 
