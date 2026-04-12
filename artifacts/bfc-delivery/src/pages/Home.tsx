@@ -10,7 +10,6 @@ import {
   getListCategoriesQueryKey,
   getListRestaurantsQueryKey,
 } from "@workspace/api-client-react";
-import type { Restaurant } from "@workspace/api-client-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +17,11 @@ import { useQuery } from "@tanstack/react-query";
 interface PromoBanner {
   id: number; title: string; subtitle: string; badge: string;
   gradient: string; emoji: string; isActive: boolean; displayOrder: number;
+}
+
+interface QuickFilter {
+  id: number; label: string; filterKey: string; filterValue: string;
+  filterType: string; isActive: boolean; displayOrder: number;
 }
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -48,7 +52,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
   bbq: "🍖",
   vegetarian: "🥗",
 };
-
 
 type SortOption = "relevance" | "fastest" | "distance" | "top-rated";
 
@@ -94,16 +97,14 @@ export default function Home() {
   const [cuisineSearch, setCuisineSearch] = useState("");
   const [showAllCuisines, setShowAllCuisines] = useState(false);
 
-  // Filters state
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
-  const [filterTopRated, setFilterTopRated] = useState(false);
-  const [filterFreeDelivery] = useState(true); // always free — pre-checked & locked
-  const [filterVouchers, setFilterVouchers] = useState(false);
-  const [filterDeals, setFilterDeals] = useState(false);
+  const [activeFilterIds, setActiveFilterIds] = useState<Set<number>>(new Set());
   const [selectedCuisines, setSelectedCuisines] = useState<number[]>([]);
   const [filterVegetarian, setFilterVegetarian] = useState(false);
   const [filterHalal, setFilterHalal] = useState(false);
   const [priceFilter, setPriceFilter] = useState<string | null>(null);
+  const [filterVouchers, setFilterVouchers] = useState(false);
+  const [filterDeals, setFilterDeals] = useState(false);
 
   const { data: categories, isLoading: isCategoriesLoading } = useListCategories({
     query: { queryKey: getListCategoriesQueryKey() },
@@ -117,6 +118,11 @@ export default function Home() {
   const { data: dealBanners = [] } = useQuery<PromoBanner[]>({
     queryKey: ["landing-banners"],
     queryFn: () => landingApi("/landing/banners"),
+  });
+
+  const { data: quickFilters = [] } = useQuery<QuickFilter[]>({
+    queryKey: ["landing-filters"],
+    queryFn: () => landingApi("/landing/filters"),
   });
 
   const { data: pageSettings = {} } = useQuery<Record<string, string>>({
@@ -136,6 +142,16 @@ export default function Home() {
     );
   };
 
+  const toggleQuickFilter = (id: number) => {
+    setActiveFilterIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const activeFilters = quickFilters.filter(f => activeFilterIds.has(f.id));
+
   const filteredRestaurants = useMemo(() => {
     if (!restaurants) return [];
     let result = [...restaurants];
@@ -143,13 +159,37 @@ export default function Home() {
     if (selectedCuisines.length > 0) {
       result = result.filter((r) => selectedCuisines.includes(r.categoryId));
     }
-    if (filterTopRated) {
-      result = result.filter((r) => r.rating >= 4.0);
-    }
+
     if (filterVegetarian) {
       result = result.filter((r) =>
         r.name.toLowerCase().includes("veg") || r.description?.toLowerCase().includes("veg")
       );
+    }
+
+    for (const f of activeFilters) {
+      switch (f.filterKey) {
+        case "isOpen":
+          result = result.filter(r => r.isOpen === true);
+          break;
+        case "topRated":
+          result = result.filter(r => r.rating >= 4.0);
+          break;
+        case "minRating":
+          result = result.filter(r => r.rating >= parseFloat(f.filterValue));
+          break;
+        case "maxMin":
+          result = result.filter(r => r.minimumOrder <= parseFloat(f.filterValue));
+          break;
+        case "freeDelivery":
+          break;
+        case "vegetarian":
+          result = result.filter(r =>
+            r.name.toLowerCase().includes("veg") || r.description?.toLowerCase().includes("veg")
+          );
+          break;
+        default:
+          break;
+      }
     }
 
     switch (sortBy) {
@@ -171,7 +211,7 @@ export default function Home() {
     }
 
     return result;
-  }, [restaurants, selectedCuisines, filterTopRated, filterVegetarian, sortBy]);
+  }, [restaurants, selectedCuisines, filterVegetarian, activeFilters, sortBy]);
 
   const visibleCuisines = useMemo(() => {
     if (!categories) return [];
@@ -181,8 +221,16 @@ export default function Home() {
     return showAllCuisines ? filtered : filtered.slice(0, 8);
   }, [categories, cuisineSearch, showAllCuisines]);
 
-  const featuredRestaurants = filteredRestaurants.filter((r) => r.isFeatured);
+  const isFiltered = selectedCuisines.length > 0 || filterVegetarian || activeFilterIds.size > 0;
   const allListRestaurants = filteredRestaurants;
+
+  const heroTitle = pageSettings.hero_title || "Sign up for free delivery\non your first order";
+  const heroSubtitle = pageSettings.hero_subtitle || "";
+  const heroCta = pageSettings.hero_cta_text || "Sign up";
+  const heroEmoji = pageSettings.hero_emoji || "🛵";
+  const cuisinesTitle = pageSettings.cuisines_section_title || "Your favourite cuisines";
+  const dealsTitle = pageSettings.deals_section_title || "Your daily deals";
+  const featuredTitle = pageSettings.featured_section_title || "Up to free delivery | Open 24/7";
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -224,7 +272,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex gap-6">
 
-            {/* LEFT SIDEBAR — Filters */}
+            {/* LEFT SIDEBAR */}
             <aside className="w-56 shrink-0">
               <div className="sticky top-24 space-y-5">
                 <h2 className="text-base font-black text-zinc-900">Filters</h2>
@@ -240,25 +288,30 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Quick filters */}
-                <div>
-                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Quick filters</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setFilterTopRated(!filterTopRated)}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
-                        filterTopRated
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
-                      }`}
-                    >
-                      <Star className="w-3 h-3" /> Ratings 4+
-                    </button>
-                    <button className="px-3 py-1 rounded-full text-xs font-semibold border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 transition">
-                      Super restaurant
-                    </button>
+                {/* Quick filters — from DB */}
+                {quickFilters.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mb-2">Quick filters</p>
+                    <div className="flex flex-wrap gap-2">
+                      {quickFilters.map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => toggleQuickFilter(f.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                            activeFilterIds.has(f.id)
+                              ? "bg-primary text-white border-primary"
+                              : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+                          }`}
+                        >
+                          {f.filterKey === "topRated" || f.filterKey === "minRating" ? (
+                            <Star className="w-3 h-3" />
+                          ) : null}
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Offers */}
                 <div>
@@ -354,31 +407,51 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
+
+                {/* Clear filters button — shows when any filter is active */}
+                {(isFiltered || priceFilter) && (
+                  <button
+                    onClick={() => {
+                      setSelectedCuisines([]);
+                      setActiveFilterIds(new Set());
+                      setFilterVegetarian(false);
+                      setFilterHalal(false);
+                      setPriceFilter(null);
+                      setSortBy("relevance");
+                    }}
+                    className="w-full text-center text-xs font-bold text-primary border border-primary rounded-lg py-1.5 hover:bg-primary/5 transition"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             </aside>
 
             {/* MAIN CONTENT */}
             <div className="flex-1 min-w-0 space-y-8">
 
-              {/* Promo Banner */}
+              {/* Hero Banner — fully driven by admin Page Settings */}
               <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 flex items-center justify-between px-8 py-5 gap-4">
                 <div>
-                  <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1">
-                    Sign up for free delivery<br />on your first order
+                  <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1 whitespace-pre-line">
+                    {heroTitle}
                   </h2>
+                  {heroSubtitle && (
+                    <p className="text-sm text-zinc-600 mb-2">{heroSubtitle}</p>
+                  )}
                   <Link href="/signup">
-                    <button className="mt-3 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
-                      Sign up
+                    <button className="mt-2 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
+                      {heroCta}
                     </button>
                   </Link>
                 </div>
-                <div className="text-7xl shrink-0 select-none hidden sm:block">🛵</div>
+                <div className="text-7xl shrink-0 select-none hidden sm:block">{heroEmoji}</div>
               </div>
 
               {/* Your favourite cuisines */}
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-black text-zinc-900">Your favourite cuisines</h2>
+                  <h2 className="text-lg font-black text-zinc-900">{cuisinesTitle}</h2>
                   <Link href="/restaurants" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
                     See all <ChevronRight className="w-4 h-4" />
                   </Link>
@@ -417,9 +490,7 @@ export default function Home() {
               {/* Daily Deals */}
               {dealBanners.length > 0 && (
                 <section>
-                  <h2 className="text-lg font-black text-zinc-900 mb-3">
-                    {pageSettings.deals_section_title || "Your daily deals"}
-                  </h2>
+                  <h2 className="text-lg font-black text-zinc-900 mb-3">{dealsTitle}</h2>
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                     {dealBanners.map((deal) => (
                       <Link key={deal.id} href="/restaurants" className="shrink-0 w-48">
@@ -442,10 +513,18 @@ export default function Home() {
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-lg font-black text-zinc-900">
-                    {selectedCuisines.length > 0 || filterTopRated || filterVegetarian
+                    {isFiltered
                       ? `Filtered results (${allListRestaurants.length})`
-                      : `Up to free delivery | Open 24/7`}
+                      : featuredTitle}
                   </h2>
+                  {isFiltered && (
+                    <button
+                      onClick={() => { setSelectedCuisines([]); setActiveFilterIds(new Set()); setFilterVegetarian(false); }}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      Clear filters
+                    </button>
+                  )}
                 </div>
 
                 {isRestaurantsLoading ? (
@@ -464,10 +543,11 @@ export default function Home() {
                     <button
                       onClick={() => {
                         setSelectedCuisines([]);
-                        setFilterTopRated(false);
+                        setActiveFilterIds(new Set());
                         setFilterVegetarian(false);
                         setFilterHalal(false);
                         setSortBy("relevance");
+                        setPriceFilter(null);
                       }}
                       className="text-primary font-semibold text-sm hover:underline"
                     >

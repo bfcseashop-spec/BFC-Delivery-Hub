@@ -70,7 +70,7 @@ function BannersTab() {
       }
       return api("/admin/landing/banners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-banners"] }); setOpen(false); toast({ title: editing ? "Banner updated" : "Banner created" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-banners"] }); qc.removeQueries({ queryKey: ["landing-banners"] }); setOpen(false); toast({ title: editing ? "Banner updated" : "Banner created" }); },
     onError: () => toast({ title: "Error saving banner", variant: "destructive" }),
   });
 
@@ -80,12 +80,17 @@ function BannersTab() {
       qc.setQueryData<PromoBanner[]>(["admin-banners"], old =>
         old?.map(item => item.id === b.id ? { ...item, isActive: !b.isActive } : item) ?? []
       );
+      qc.removeQueries({ queryKey: ["landing-banners"] });
     },
   });
 
   const remove = useMutation({
     mutationFn: (id: number) => api(`/admin/landing/banners/${id}`, { method: "DELETE" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-banners"] }); toast({ title: "Banner deleted" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-banners"] });
+      qc.removeQueries({ queryKey: ["landing-banners"] });
+      toast({ title: "Banner deleted" });
+    },
     onError: () => toast({ title: "Error deleting banner", variant: "destructive" }),
   });
 
@@ -232,7 +237,7 @@ function FiltersTab() {
       }
       return api("/admin/landing/filters", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-filters"] }); setOpen(false); toast({ title: editing ? "Filter updated" : "Filter created" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-filters"] }); qc.removeQueries({ queryKey: ["landing-filters"] }); setOpen(false); toast({ title: editing ? "Filter updated" : "Filter created" }); },
     onError: () => toast({ title: "Error saving filter", variant: "destructive" }),
   });
 
@@ -242,12 +247,13 @@ function FiltersTab() {
       qc.setQueryData<QuickFilter[]>(["admin-filters"], old =>
         old?.map(item => item.id === f.id ? { ...item, isActive: !f.isActive } : item) ?? []
       );
+      qc.removeQueries({ queryKey: ["landing-filters"] });
     },
   });
 
   const remove = useMutation({
     mutationFn: (id: number) => api(`/admin/landing/filters/${id}`, { method: "DELETE" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-filters"] }); toast({ title: "Filter deleted" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-filters"] }); qc.removeQueries({ queryKey: ["landing-filters"] }); toast({ title: "Filter deleted" }); },
     onError: () => toast({ title: "Error deleting filter", variant: "destructive" }),
   });
 
@@ -393,18 +399,25 @@ function SettingsTab() {
 
   const save = useMutation({
     mutationFn: () => api("/admin/landing/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-settings"] }); setDirty(false); toast({ title: "Settings saved" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      qc.removeQueries({ queryKey: ["landing-settings"] });
+      setDirty(false);
+      toast({ title: "Settings saved" });
+    },
     onError: () => toast({ title: "Error saving settings", variant: "destructive" }),
   });
 
   const currentForm = Object.keys(form).length > 0 ? form : (settings ?? {});
 
   const LABELS: Record<string, { label: string; desc: string }> = {
-    hero_title: { label: "Hero Title", desc: "Main headline on the homepage" },
-    hero_subtitle: { label: "Hero Subtitle", desc: "Sub-text below the headline" },
-    deals_section_title: { label: "Deals Section Title", desc: "Heading for the promo banners row" },
-    cuisines_section_title: { label: "Cuisines Section Title", desc: "Heading for the cuisine circles" },
-    featured_section_title: { label: "Featured Restaurants Title", desc: "Heading for the restaurant grid" },
+    hero_title: { label: "Hero Title", desc: "Main headline shown on the homepage banner" },
+    hero_subtitle: { label: "Hero Subtitle", desc: "Smaller text shown below the headline" },
+    hero_cta_text: { label: "Hero Button Text", desc: "The call-to-action button label (e.g. 'Sign up free')" },
+    hero_emoji: { label: "Hero Emoji", desc: "Decorative emoji displayed beside the hero text (e.g. 🛵)" },
+    deals_section_title: { label: "Deals Section Title", desc: "Heading above the promo deal banner cards" },
+    cuisines_section_title: { label: "Cuisines Section Title", desc: "Heading above the cuisine category circles" },
+    featured_section_title: { label: "Restaurants Section Title", desc: "Default heading above the restaurant grid (no filters active)" },
   };
 
   return (
