@@ -1,7 +1,5 @@
-import { Star, Clock, MapPin } from "lucide-react";
+import { Star, Clock } from "lucide-react";
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Restaurant } from "@workspace/api-client-react";
 
 import fallbackImage from "@/assets/images/restaurant-fallback.png";
@@ -9,8 +7,10 @@ import fallbackImage from "@/assets/images/restaurant-fallback.png";
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
     <Link href={`/restaurant/${restaurant.id}`}>
-      <Card className="overflow-hidden cursor-pointer hover-elevate transition-all group border-transparent hover:border-primary/20 shadow-sm hover:shadow-md h-full flex flex-col bg-card">
-        <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-zinc-100 hover:border-primary/20 transition-all duration-300 hover:-translate-y-0.5 h-full flex flex-col">
+
+        {/* Image */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
           <img
             src={restaurant.imageUrl || fallbackImage}
             alt={restaurant.name}
@@ -19,52 +19,62 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
               (e.target as HTMLImageElement).src = fallbackImage;
             }}
           />
-          <div className="absolute top-3 left-3 flex flex-col gap-2">
+
+          {/* Gradient overlay at bottom */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+          {/* Top badges */}
+          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
             {restaurant.isFeatured && (
-              <Badge className="bg-secondary text-secondary-foreground hover:bg-secondary font-bold uppercase tracking-wider px-2.5 py-0.5">
-                Featured
-              </Badge>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full shadow-sm">
+                ⭐ Featured
+              </span>
             )}
-            <Badge className="bg-primary text-primary-foreground hover:bg-primary font-bold uppercase tracking-wider px-2.5 py-0.5 shadow-sm">
+            <span className="text-[10px] font-black uppercase tracking-wider bg-primary text-white px-2 py-0.5 rounded-full shadow-sm">
               Free Delivery
-            </Badge>
+            </span>
           </div>
-          
-          <div className="absolute bottom-3 right-3 bg-background/95 backdrop-blur-sm text-foreground font-bold px-2 py-1 rounded-md text-sm flex items-center gap-1 shadow-sm">
-            <Clock className="w-3.5 h-3.5 text-primary" />
+
+          {/* Delivery time — bottom right on image */}
+          <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-sm text-zinc-800 font-bold px-2 py-1 rounded-lg text-xs flex items-center gap-1 shadow-sm">
+            <Clock className="w-3 h-3 text-primary" />
             {restaurant.deliveryTime}
+          </div>
+
+          {/* Rating pill — bottom left on image */}
+          <div className="absolute bottom-2.5 left-2.5 bg-white/95 backdrop-blur-sm text-zinc-800 font-bold px-2 py-1 rounded-lg text-xs flex items-center gap-1 shadow-sm">
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            {restaurant.rating.toFixed(1)}
           </div>
         </div>
 
-        <CardContent className="p-4 flex-1 flex flex-col">
-          <div className="flex justify-between items-start mb-2 gap-2">
-            <h3 className="font-display font-bold text-lg leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-              {restaurant.name}
-            </h3>
-            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-sm font-bold shrink-0">
-              <Star className="w-3.5 h-3.5 fill-secondary text-secondary" />
-              {restaurant.rating.toFixed(1)}
-            </div>
-          </div>
-          
-          <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
+        {/* Body */}
+        <div className="p-3.5 flex-1 flex flex-col">
+          <h3 className="font-bold text-base leading-tight line-clamp-1 text-zinc-900 group-hover:text-primary transition-colors mb-1">
+            {restaurant.name}
+          </h3>
+
+          <p className="text-zinc-500 text-xs line-clamp-2 mb-3 flex-1 leading-relaxed">
             {restaurant.description}
           </p>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border/50">
-            <div className="flex items-center gap-1.5 font-medium">
-              <span className="text-primary">•</span>
+          <div className="flex items-center gap-2 pt-2.5 border-t border-zinc-100">
+            <span className="text-[11px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded-full">
               {restaurant.categoryName}
-            </div>
+            </span>
             {restaurant.minimumOrder > 0 && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-zinc-300">•</span>
+              <span className="text-[11px] text-zinc-400 font-medium">
                 Min. ${restaurant.minimumOrder.toFixed(2)}
-              </div>
+              </span>
+            )}
+            {!restaurant.isOpen && (
+              <span className="ml-auto text-[10px] font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">
+                Closed
+              </span>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </Link>
   );
 }
