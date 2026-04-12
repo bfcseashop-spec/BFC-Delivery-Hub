@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,12 +10,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ArrowLeft, Loader2, Phone, Mail } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 
-const loginSchema = z.object({
+const emailSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+const phoneSchema = z.object({
+  phone: z.string().min(8, "Enter a valid phone number"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type EmailFormValues = z.infer<typeof emailSchema>;
+type PhoneFormValues = z.infer<typeof phoneSchema>;
+type Step = "choose" | "email" | "phone";
 
 function FacebookIcon() {
   return (
@@ -38,17 +45,20 @@ function GoogleIcon() {
 
 export default function Login() {
   const { login } = useAuth();
-  const [, navigate] = useLocation();
-  const [step, setStep] = useState<"choose" | "email">("choose");
+  const [step, setStep] = useState<Step>("choose");
   const [isLoading, setIsLoading] = useState(false);
-  const [socialMsg, setSocialMsg] = useState<string | null>(null);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const emailForm = useForm<EmailFormValues>({
+    resolver: zodResolver(emailSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const phoneForm = useForm<PhoneFormValues>({
+    resolver: zodResolver(phoneSchema),
+    defaultValues: { phone: "", password: "" },
+  });
+
+  const onEmailSubmit = async (data: EmailFormValues) => {
     setIsLoading(true);
     try {
       await login(data);
@@ -57,9 +67,16 @@ export default function Login() {
     }
   };
 
-  const handleSocial = (method: string) => {
-    setSocialMsg(`${method} sign-in is coming soon. Please use email login for now.`);
-    setTimeout(() => setSocialMsg(null), 3500);
+  const onPhoneSubmit = async (data: PhoneFormValues) => {
+    setIsLoading(true);
+    try {
+      await login({
+        email: `${data.phone.replace(/\s+/g, "")}@bfc.phone`,
+        password: data.password,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,21 +84,16 @@ export default function Login() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
-          {step === "choose" ? (
+
+          {step === "choose" && (
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-zinc-100">
               <div className="p-8 pb-6">
                 <h1 className="text-2xl font-black tracking-tight mb-1">Welcome!</h1>
                 <p className="text-sm text-zinc-500 mb-6">Sign up or log in to continue</p>
 
-                {socialMsg && (
-                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-700">
-                    {socialMsg}
-                  </div>
-                )}
-
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={() => handleSocial("Facebook")}
+                    onClick={() => setStep("email")}
                     className="flex items-center justify-center gap-3 w-full h-12 rounded-lg font-semibold text-white text-sm transition hover:opacity-90 active:scale-[0.98]"
                     style={{ backgroundColor: "#1877F2" }}
                   >
@@ -90,7 +102,7 @@ export default function Login() {
                   </button>
 
                   <button
-                    onClick={() => handleSocial("Google")}
+                    onClick={() => setStep("email")}
                     className="flex items-center justify-center gap-3 w-full h-12 rounded-lg font-semibold text-zinc-800 text-sm border border-zinc-300 bg-white transition hover:bg-zinc-50 active:scale-[0.98]"
                   >
                     <GoogleIcon />
@@ -98,7 +110,7 @@ export default function Login() {
                   </button>
 
                   <button
-                    onClick={() => handleSocial("Phone Number")}
+                    onClick={() => setStep("phone")}
                     className="flex items-center justify-center gap-3 w-full h-12 rounded-lg font-semibold text-zinc-800 text-sm border border-zinc-300 bg-white transition hover:bg-zinc-50 active:scale-[0.98]"
                   >
                     <Phone className="w-5 h-5 text-zinc-600" />
@@ -137,7 +149,9 @@ export default function Login() {
                 <span className="text-orange-500 font-medium cursor-pointer hover:underline">Privacy Policy</span>.
               </div>
             </div>
-          ) : (
+          )}
+
+          {step === "email" && (
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-zinc-100">
               <div className="p-8 pb-6">
                 <button
@@ -150,40 +164,23 @@ export default function Login() {
                 <h1 className="text-2xl font-black tracking-tight mb-1">Log In</h1>
                 <p className="text-sm text-zinc-500 mb-6">Enter your email and password</p>
 
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-zinc-700">Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="name@example.com" className="h-12" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-bold text-zinc-700">Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" autoComplete="current-password" placeholder="••••••••" className="h-12" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="submit"
-                      className="w-full h-12 text-base font-bold mt-2"
-                      style={{ backgroundColor: "#E8472A" }}
-                      disabled={isLoading}
-                    >
+                <Form {...emailForm}>
+                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                    <FormField control={emailForm.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold text-zinc-700">Email</FormLabel>
+                        <FormControl><Input placeholder="name@example.com" className="h-12" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={emailForm.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold text-zinc-700">Password</FormLabel>
+                        <FormControl><Input type="password" autoComplete="current-password" placeholder="••••••••" className="h-12" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <Button type="submit" className="w-full h-12 text-base font-bold mt-2" style={{ backgroundColor: "#E8472A" }} disabled={isLoading}>
                       {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                       Sign In
                     </Button>
@@ -192,13 +189,61 @@ export default function Login() {
 
                 <div className="mt-6 text-center text-sm">
                   <span className="text-zinc-400">Don't have an account? </span>
-                  <Link href="/signup">
-                    <span className="font-bold text-orange-500 hover:underline cursor-pointer">Sign up</span>
-                  </Link>
+                  <Link href="/signup"><span className="font-bold text-orange-500 hover:underline cursor-pointer">Sign up</span></Link>
                 </div>
               </div>
             </div>
           )}
+
+          {step === "phone" && (
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-zinc-100">
+              <div className="p-8 pb-6">
+                <button
+                  onClick={() => setStep("choose")}
+                  className="inline-flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-zinc-700 mb-6 transition"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+
+                <h1 className="text-2xl font-black tracking-tight mb-1">Log In</h1>
+                <p className="text-sm text-zinc-500 mb-6">Enter your phone number and password</p>
+
+                <Form {...phoneForm}>
+                  <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
+                    <FormField control={phoneForm.control} name="phone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold text-zinc-700">Phone Number</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <div className="flex items-center h-12 px-3 border rounded-md bg-zinc-50 text-sm font-semibold text-zinc-600 shrink-0">+855</div>
+                            <Input placeholder="012 345 678" className="h-12" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={phoneForm.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold text-zinc-700">Password</FormLabel>
+                        <FormControl><Input type="password" autoComplete="current-password" placeholder="••••••••" className="h-12" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <Button type="submit" className="w-full h-12 text-base font-bold mt-2" style={{ backgroundColor: "#E8472A" }} disabled={isLoading}>
+                      {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                      Sign In
+                    </Button>
+                  </form>
+                </Form>
+
+                <div className="mt-6 text-center text-sm">
+                  <span className="text-zinc-400">Don't have an account? </span>
+                  <Link href="/signup"><span className="font-bold text-orange-500 hover:underline cursor-pointer">Sign up</span></Link>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
     </div>
