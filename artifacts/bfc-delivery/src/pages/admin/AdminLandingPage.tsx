@@ -13,14 +13,15 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Pencil, Trash2, LayoutDashboard, SlidersHorizontal, Settings2,
-  Eye, EyeOff,
+  Eye, EyeOff, ImageIcon, Palette, Upload, X,
 } from "lucide-react";
 
 type Tab = "hero-banners" | "banners" | "filters" | "settings";
 
 interface HeroBanner {
   id: number; title: string; subtitle: string; ctaText: string;
-  ctaLink: string; emoji: string; gradient: string; isActive: boolean; displayOrder: number;
+  ctaLink: string; emoji: string; gradient: string; imageUrl: string;
+  isActive: boolean; displayOrder: number;
 }
 
 interface PromoBanner {
@@ -479,7 +480,9 @@ function HeroBannersTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<HeroBanner | null>(null);
-  const [form, setForm] = useState({ title: "", subtitle: "", ctaText: "Sign up free", ctaLink: "/signup", emoji: "🛵", gradient: HERO_GRADIENTS[0].value, displayOrder: "0" });
+  const [form, setForm] = useState({ title: "", subtitle: "", ctaText: "Sign up free", ctaLink: "/signup", emoji: "🛵", gradient: HERO_GRADIENTS[0].value, imageUrl: "", displayOrder: "0" });
+  const [bgMode, setBgMode] = useState<"gradient" | "image">("gradient");
+  const [uploading, setUploading] = useState(false);
 
   const { data: banners = [], isLoading } = useQuery<HeroBanner[]>({
     queryKey: ["admin-hero-banners"],
@@ -490,7 +493,11 @@ function HeroBannersTab() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const body = { ...form, displayOrder: parseInt(form.displayOrder) || 0 };
+      const body = {
+        ...form,
+        imageUrl: bgMode === "gradient" ? "" : form.imageUrl,
+        displayOrder: parseInt(form.displayOrder) || 0,
+      };
       if (editing) {
         return api(`/admin/landing/hero-banners/${editing.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       }
@@ -504,6 +511,22 @@ function HeroBannersTab() {
     },
     onError: () => toast({ title: "Error saving banner", variant: "destructive" }),
   });
+
+  async function handleImageUpload(file: File) {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await api("/admin/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      setForm(f => ({ ...f, imageUrl: url }));
+    } catch {
+      toast({ title: "Image upload failed", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const toggle = useMutation({
     mutationFn: (b: HeroBanner) => api(`/admin/landing/hero-banners/${b.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !b.isActive }) }),
@@ -527,13 +550,15 @@ function HeroBannersTab() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ title: "", subtitle: "", ctaText: "Sign up free", ctaLink: "/signup", emoji: "🛵", gradient: HERO_GRADIENTS[0].value, displayOrder: String(banners.length + 1) });
+    setForm({ title: "", subtitle: "", ctaText: "Sign up free", ctaLink: "/signup", emoji: "🛵", gradient: HERO_GRADIENTS[0].value, imageUrl: "", displayOrder: String(banners.length + 1) });
+    setBgMode("gradient");
     setOpen(true);
   }
 
   function openEdit(b: HeroBanner) {
     setEditing(b);
-    setForm({ title: b.title, subtitle: b.subtitle, ctaText: b.ctaText, ctaLink: b.ctaLink, emoji: b.emoji, gradient: b.gradient, displayOrder: String(b.displayOrder) });
+    setForm({ title: b.title, subtitle: b.subtitle, ctaText: b.ctaText, ctaLink: b.ctaLink, emoji: b.emoji, gradient: b.gradient, imageUrl: b.imageUrl ?? "", displayOrder: String(b.displayOrder) });
+    setBgMode(b.imageUrl ? "image" : "gradient");
     setOpen(true);
   }
 
@@ -562,9 +587,13 @@ function HeroBannersTab() {
           {banners.map(b => (
             <Card key={b.id} className={b.isActive ? "" : "opacity-50"}>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${b.gradient} flex items-center justify-center text-2xl border border-zinc-100 shrink-0`}>
-                  {b.emoji}
-                </div>
+                {b.imageUrl ? (
+                  <img src={b.imageUrl} alt={b.title} className="w-14 h-14 rounded-xl object-cover border border-zinc-100 shrink-0" />
+                ) : (
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${b.gradient} flex items-center justify-center text-2xl border border-zinc-100 shrink-0`}>
+                    {b.emoji}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-bold text-zinc-900 truncate">{b.title}</span>
@@ -592,7 +621,7 @@ function HeroBannersTab() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Hero Banner" : "New Hero Banner"}</DialogTitle>
           </DialogHeader>
@@ -617,7 +646,7 @@ function HeroBannersTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Emoji</Label>
+                <Label>Emoji (shown on gradient banners)</Label>
                 <Input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))} placeholder="🛵" />
               </div>
               <div>
@@ -625,34 +654,99 @@ function HeroBannersTab() {
                 <Input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} />
               </div>
             </div>
+
+            {/* Background mode toggle */}
             <div>
-              <Label>Background Style</Label>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {HERO_GRADIENTS.map(g => (
-                  <button
-                    key={g.value}
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, gradient: g.value }))}
-                    className={`h-10 rounded-lg bg-gradient-to-r ${g.value} border-2 transition ${form.gradient === g.value ? "border-primary scale-105" : "border-transparent"}`}
-                    title={g.label}
-                  />
-                ))}
+              <Label>Background</Label>
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setBgMode("gradient")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition ${bgMode === "gradient" ? "bg-primary text-white border-primary" : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"}`}
+                >
+                  <Palette className="w-4 h-4" /> Colour
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBgMode("image")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition ${bgMode === "image" ? "bg-primary text-white border-primary" : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"}`}
+                >
+                  <ImageIcon className="w-4 h-4" /> Image
+                </button>
               </div>
-              <div className={`mt-2 rounded-xl bg-gradient-to-r ${form.gradient} border border-zinc-200 flex items-center justify-between px-4 py-3 gap-4`}>
-                <div>
-                  <p className="font-bold text-zinc-900 text-sm">{form.title || "Banner Title"}</p>
-                  {form.subtitle && <p className="text-xs text-zinc-500">{form.subtitle}</p>}
-                  <span className="mt-1 inline-block text-xs font-semibold bg-primary text-white px-3 py-1 rounded-md">
+            </div>
+
+            {bgMode === "gradient" ? (
+              <div>
+                <Label>Colour Style</Label>
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {HERO_GRADIENTS.map(g => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, gradient: g.value }))}
+                      className={`h-10 rounded-lg bg-gradient-to-r ${g.value} border-2 transition ${form.gradient === g.value ? "border-primary scale-105" : "border-transparent"}`}
+                      title={g.label}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label>Banner Image</Label>
+                <div className="mt-2 space-y-2">
+                  <label className="flex items-center justify-center gap-2 w-full h-24 border-2 border-dashed border-zinc-300 rounded-xl cursor-pointer hover:border-primary transition bg-zinc-50">
+                    <Upload className="w-5 h-5 text-zinc-400" />
+                    <span className="text-sm text-zinc-500">{uploading ? "Uploading..." : "Click to upload image"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+                    />
+                  </label>
+                  {form.imageUrl && (
+                    <div className="relative">
+                      <img src={form.imageUrl} alt="Banner preview" className="w-full h-32 object-cover rounded-xl border" />
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, imageUrl: "" }))}
+                        className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-xs text-zinc-400">Supports JPG, PNG, WebP. Max 5MB. Text will be overlaid on top of the image.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Live preview */}
+            <div>
+              <Label>Preview</Label>
+              <div
+                className={`mt-2 rounded-xl border border-zinc-200 flex items-center justify-between px-4 py-4 gap-4 overflow-hidden relative ${bgMode === "gradient" ? `bg-gradient-to-r ${form.gradient}` : ""}`}
+                style={bgMode === "image" && form.imageUrl ? { backgroundImage: `url(${form.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+              >
+                {bgMode === "image" && form.imageUrl && <div className="absolute inset-0 bg-black/35" />}
+                <div className="relative z-10">
+                  <p className={`font-bold text-sm ${bgMode === "image" && form.imageUrl ? "text-white" : "text-zinc-900"}`}>{form.title || "Banner Title"}</p>
+                  {form.subtitle && <p className={`text-xs mt-0.5 ${bgMode === "image" && form.imageUrl ? "text-white/80" : "text-zinc-500"}`}>{form.subtitle}</p>}
+                  <span className="mt-2 inline-block text-xs font-semibold bg-primary text-white px-3 py-1 rounded-md">
                     {form.ctaText || "Sign up free"}
                   </span>
                 </div>
-                <div className="text-4xl">{form.emoji || "🛵"}</div>
+                {bgMode === "gradient" && (
+                  <div className="text-4xl relative z-10">{form.emoji || "🛵"}</div>
+                )}
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.title} style={{ backgroundColor: "#E8472A" }}>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.title || uploading} style={{ backgroundColor: "#E8472A" }}>
               {save.isPending ? "Saving..." : editing ? "Save Changes" : "Create Banner"}
             </Button>
           </DialogFooter>

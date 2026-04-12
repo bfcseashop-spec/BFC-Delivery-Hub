@@ -253,11 +253,12 @@ router.get("/admin/landing/hero-banners", async (_req, res): Promise<void> => {
 });
 
 router.post("/admin/landing/hero-banners", async (req, res): Promise<void> => {
-  const { title, subtitle, ctaText, ctaLink, emoji, gradient, isActive, displayOrder } = req.body;
+  const { title, subtitle, ctaText, ctaLink, emoji, gradient, imageUrl, isActive, displayOrder } = req.body;
   if (!title) { res.status(400).json({ error: "title is required" }); return; }
   const [banner] = await db.insert(heroBannersTable).values({
     title, subtitle: subtitle ?? "", ctaText: ctaText ?? "Sign up free", ctaLink: ctaLink ?? "/signup",
     emoji: emoji ?? "🛵", gradient: gradient ?? "from-orange-50 to-amber-50",
+    imageUrl: imageUrl ?? "",
     isActive: isActive ?? true, displayOrder: displayOrder ?? 0,
   }).returning();
   res.status(201).json(banner);
@@ -266,7 +267,7 @@ router.post("/admin/landing/hero-banners", async (req, res): Promise<void> => {
 router.patch("/admin/landing/hero-banners/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const { title, subtitle, ctaText, ctaLink, emoji, gradient, isActive, displayOrder } = req.body;
+  const { title, subtitle, ctaText, ctaLink, emoji, gradient, imageUrl, isActive, displayOrder } = req.body;
   const updates: Partial<typeof heroBannersTable.$inferInsert> = {};
   if (title != null) updates.title = title;
   if (subtitle != null) updates.subtitle = subtitle;
@@ -274,6 +275,7 @@ router.patch("/admin/landing/hero-banners/:id", async (req, res): Promise<void> 
   if (ctaLink != null) updates.ctaLink = ctaLink;
   if (emoji != null) updates.emoji = emoji;
   if (gradient != null) updates.gradient = gradient;
+  if (imageUrl != null) updates.imageUrl = imageUrl;
   if (isActive != null) updates.isActive = isActive;
   if (displayOrder != null) updates.displayOrder = displayOrder;
   const [banner] = await db.update(heroBannersTable).set(updates).where(eq(heroBannersTable.id, id)).returning();

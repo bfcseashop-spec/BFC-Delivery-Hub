@@ -10,6 +10,7 @@ export const heroBannersTable = pgTable("hero_banners", {
   ctaLink: text("cta_link").notNull().default("/signup"),
   emoji: text("emoji").notNull().default("🛵"),
   gradient: text("gradient").notNull().default("from-orange-50 to-amber-50"),
+  imageUrl: text("image_url").notNull().default(""),
   isActive: boolean("is_active").notNull().default(true),
   displayOrder: integer("display_order").notNull().default(0),
 });

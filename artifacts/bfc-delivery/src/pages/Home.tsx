@@ -16,7 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 
 interface HeroBanner {
   id: number; title: string; subtitle: string; ctaText: string;
-  ctaLink: string; emoji: string; gradient: string; isActive: boolean; displayOrder: number;
+  ctaLink: string; emoji: string; gradient: string; imageUrl: string;
+  isActive: boolean; displayOrder: number;
 }
 
 interface PromoBanner {
@@ -458,14 +459,21 @@ export default function Home() {
                     {heroBanners.map((banner) => (
                       <div
                         key={banner.id}
-                        className={`min-w-full bg-gradient-to-r ${banner.gradient} border border-orange-100 flex items-center justify-between px-8 py-5 gap-4 rounded-2xl`}
+                        className={`min-w-full relative flex items-center justify-between px-8 py-6 gap-4 rounded-2xl overflow-hidden ${banner.imageUrl ? "" : `bg-gradient-to-r ${banner.gradient} border border-orange-100`}`}
+                        style={banner.imageUrl ? {
+                          backgroundImage: `url(${banner.imageUrl})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          minHeight: "140px",
+                        } : {}}
                       >
-                        <div>
-                          <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1 whitespace-pre-line">
+                        {banner.imageUrl && <div className="absolute inset-0 bg-black/40" />}
+                        <div className="relative z-10">
+                          <h2 className={`text-xl font-black leading-tight mb-1 whitespace-pre-line ${banner.imageUrl ? "text-white" : "text-zinc-900"}`}>
                             {banner.title}
                           </h2>
                           {banner.subtitle && (
-                            <p className="text-sm text-zinc-600 mb-2">{banner.subtitle}</p>
+                            <p className={`text-sm mb-2 ${banner.imageUrl ? "text-white/85" : "text-zinc-600"}`}>{banner.subtitle}</p>
                           )}
                           <Link href={banner.ctaLink || "/signup"}>
                             <button className="mt-2 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
@@ -473,7 +481,9 @@ export default function Home() {
                             </button>
                           </Link>
                         </div>
-                        <div className="text-7xl shrink-0 select-none hidden sm:block">{banner.emoji}</div>
+                        {!banner.imageUrl && (
+                          <div className="text-7xl shrink-0 select-none hidden sm:block relative z-10">{banner.emoji}</div>
+                        )}
                       </div>
                     ))}
                   </div>

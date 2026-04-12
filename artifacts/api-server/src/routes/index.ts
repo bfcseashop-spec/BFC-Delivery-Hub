@@ -7,6 +7,7 @@ import menuRouter from "./menu";
 import ordersRouter from "./orders";
 import adminRouter from "./admin";
 import landingRouter from "./landing";
+import uploadRouter from "./upload";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(menuRouter);
 router.use(ordersRouter);
 router.use(adminRouter);
 router.use(landingRouter);
+router.use(uploadRouter);
 
 export default router;
