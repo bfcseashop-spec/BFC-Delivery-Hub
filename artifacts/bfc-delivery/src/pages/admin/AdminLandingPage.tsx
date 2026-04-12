@@ -486,7 +486,12 @@ function HeroBannersTab() {
 
   const { data: banners = [], isLoading } = useQuery<HeroBanner[]>({
     queryKey: ["admin-hero-banners"],
-    queryFn: () => api("/admin/landing/hero-banners").then(r => r.json()),
+    queryFn: async () => {
+      const r = await api("/admin/landing/hero-banners");
+      if (!r.ok) return [];
+      const data = await r.json();
+      return Array.isArray(data) ? data : [];
+    },
     staleTime: 0,
     refetchOnMount: true,
   });

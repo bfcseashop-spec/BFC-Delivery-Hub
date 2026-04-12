@@ -42,7 +42,7 @@ app.use(
   session({
     store: new PgStore({
       pool,
-      createTableIfMissing: true,
+      createTableIfMissing: false,
     }),
     secret: process.env.SESSION_SECRET ?? "bfc-fallback-secret",
     resave: false,
