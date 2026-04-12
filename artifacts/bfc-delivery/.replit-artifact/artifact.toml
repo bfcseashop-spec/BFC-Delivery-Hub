@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "BFC Fast Delivery"
+version = "1.0.0"
+id = "artifacts/bfc-delivery"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22214
+
+[services.development]
+run = "pnpm --filter @workspace/bfc-delivery run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bfc-delivery", "run", "build" ]
+publicDir = "artifacts/bfc-delivery/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22214"
+BASE_PATH = "/"

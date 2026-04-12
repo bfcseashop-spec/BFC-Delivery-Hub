@@ -3,20 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BFC Fast Delivery API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: restaurants
+    description: Restaurant operations
+  - name: menu
+    description: Menu operations
+  - name: orders
+    description: Order operations
+  - name: categories
+    description: Category operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,181 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all food categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /restaurants:
+    get:
+      operationId: listRestaurants
+      tags: [restaurants]
+      summary: List all restaurants
+      parameters:
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of restaurants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Restaurant"
+
+  /restaurants/featured:
+    get:
+      operationId: listFeaturedRestaurants
+      tags: [restaurants]
+      summary: List featured restaurants for homepage
+      responses:
+        "200":
+          description: Featured restaurants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Restaurant"
+
+  /restaurants/{restaurantId}:
+    get:
+      operationId: getRestaurant
+      tags: [restaurants]
+      summary: Get a restaurant by ID
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Restaurant details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /restaurants/{restaurantId}/menu:
+    get:
+      operationId: getRestaurantMenu
+      tags: [menu]
+      summary: Get menu items for a restaurant
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Menu items grouped by category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuSection"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order by ID
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats/overview:
+    get:
+      operationId: getStatsOverview
+      tags: [restaurants]
+      summary: Get platform stats overview
+      responses:
+        "200":
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsOverview"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +216,221 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        icon:
+          type: string
+        slug:
+          type: string
+      required:
+        - id
+        - name
+        - icon
+        - slug
+
+    Restaurant:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        deliveryTime:
+          type: string
+        minimumOrder:
+          type: number
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        address:
+          type: string
+        isOpen:
+          type: boolean
+        isFeatured:
+          type: boolean
+      required:
+        - id
+        - name
+        - description
+        - imageUrl
+        - rating
+        - reviewCount
+        - deliveryTime
+        - minimumOrder
+        - categoryId
+        - categoryName
+        - address
+        - isOpen
+        - isFeatured
+
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        restaurantId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        imageUrl:
+          type: string
+        category:
+          type: string
+        isAvailable:
+          type: boolean
+        isPopular:
+          type: boolean
+      required:
+        - id
+        - restaurantId
+        - name
+        - description
+        - price
+        - imageUrl
+        - category
+        - isAvailable
+        - isPopular
+
+    MenuSection:
+      type: object
+      properties:
+        category:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MenuItem"
+      required:
+        - category
+        - items
+
+    OrderItem:
+      type: object
+      properties:
+        menuItemId:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: integer
+      required:
+        - menuItemId
+        - name
+        - price
+        - quantity
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        restaurantId:
+          type: integer
+        restaurantName:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        totalAmount:
+          type: number
+        deliveryAddress:
+          type: string
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, preparing, out_for_delivery, delivered, cancelled]
+        estimatedDelivery:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - restaurantId
+        - restaurantName
+        - items
+        - totalAmount
+        - deliveryAddress
+        - customerName
+        - customerPhone
+        - status
+        - estimatedDelivery
+        - createdAt
+
+    CreateOrderBody:
+      type: object
+      properties:
+        restaurantId:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              menuItemId:
+                type: integer
+              quantity:
+                type: integer
+            required:
+              - menuItemId
+              - quantity
+        deliveryAddress:
+          type: string
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+      required:
+        - restaurantId
+        - items
+        - deliveryAddress
+        - customerName
+        - customerPhone
+
+    StatsOverview:
+      type: object
+      properties:
+        totalRestaurants:
+          type: integer
+        totalOrders:
+          type: integer
+        totalCategories:
+          type: integer
+        avgDeliveryTime:
+          type: string
+      required:
+        - totalRestaurants
+        - totalOrders
+        - totalCategories
+        - avgDeliveryTime

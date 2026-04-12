@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "DpywUXCCERSoakgB4JknB"
+uri = "file://artifacts/bfc-delivery/src/assets/images/hero.png"
+type = "image"
+title = "Vibrant Cambodian market food delivery hero"
+
+[[generated]]
+id = "B9EcnEw45q7s4irrXJuDY"
+uri = "file://artifacts/bfc-delivery/src/assets/images/restaurant-fallback.png"
+type = "image"
+title = "Delicious Cambodian food restaurant fallback"
+
+[[generated]]
+id = "WV49QSXa5IhnOfDLtyY8W"
+uri = "file://artifacts/bfc-delivery/src/assets/images/menu-fallback.png"
+type = "image"
+title = "Tasty bowl of food menu item fallback"
