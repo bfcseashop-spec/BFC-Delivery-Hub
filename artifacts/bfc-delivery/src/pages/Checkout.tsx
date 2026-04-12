@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useCart } from "@/lib/CartContext";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,16 +35,23 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const { items, totalPrice, restaurantId, restaurantName, clearCart } = useCart();
+  const { user } = useAuth();
   const createOrder = useCreateOrder();
   
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      customerName: "",
+      customerName: user?.name || "",
       customerPhone: "",
       deliveryAddress: "",
     },
   });
+
+  useEffect(() => {
+    if (user?.name && !form.getValues().customerName) {
+      form.setValue("customerName", user.name);
+    }
+  }, [user, form]);
 
   if (items.length === 0) {
     return (

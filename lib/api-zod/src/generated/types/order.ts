@@ -20,4 +20,5 @@ export interface Order {
   status: OrderStatus;
   estimatedDelivery: string;
   createdAt: string;
+  userId?: number | null;
 }

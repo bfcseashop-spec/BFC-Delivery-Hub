@@ -16,11 +16,35 @@ pnpm workspace monorepo using TypeScript. This project is **BFC Fast Delivery** 
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 - **Frontend**: React + Vite + Tailwind CSS v4 + shadcn/ui
+- **Auth**: express-session + connect-pg-simple + bcrypt
 
 ## Artifacts
 
-- **bfc-delivery** (`/`): Main React frontend — homepage, restaurant browse, restaurant detail, checkout, order tracking
+- **bfc-delivery** (`/`): Main React frontend
 - **api-server** (`/api`): Express 5 backend REST API
+
+## Frontend Pages
+
+### Customer
+- `/` — Homepage with featured restaurants and categories
+- `/restaurants` — Browse all restaurants with search/filter
+- `/restaurant/:id` — Restaurant detail with menu and cart
+- `/checkout` — Order checkout with customer details
+- `/order/:id` — Order status tracking
+- `/my-orders` — Customer order history (requires login)
+- `/login` — Sign in page
+- `/signup` — Sign up page
+
+### Admin Panel (admin role only)
+- `/admin` — Dashboard with stats overview
+- `/admin/orders` — All orders management with status updates
+- `/admin/restaurants` — Restaurant CRUD management
+- `/admin/menu-items` — Menu item CRUD management
+
+## Default Accounts
+
+- **Admin**: admin@bfc.com / admin123
+- **Customer**: customer@bfc.com / customer123
 
 ## Key Commands
 
@@ -29,25 +53,43 @@ pnpm workspace monorepo using TypeScript. This project is **BFC Fast Delivery** 
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
-- `pnpm --filter @workspace/scripts run seed` — seed the database
+- `pnpm --filter @workspace/scripts run seed` — seed restaurants and menu items
 
 ## Database Schema
 
-- **categories** — food categories (Khmer Food, Fast Food, Noodles, Seafood, Desserts, Drinks, BBQ, Vegetarian)
+- **users** — platform users with role (customer/admin), email, bcrypt password
+- **session** — express-session storage table
+- **categories** — food categories (Khmer Food, Fast Food, Noodles, Seafood, etc.)
 - **restaurants** — shop listings with ratings, delivery times, minimum orders
 - **menu_items** — menu items per restaurant with prices, categories, availability
 - **orders** — customer orders with JSONB items array, status tracking
 
 ## API Routes
 
-- `GET /api/categories` — list all categories
-- `GET /api/restaurants` — list restaurants (filter by categoryId, search, limit)
-- `GET /api/restaurants/featured` — featured restaurants for homepage
-- `GET /api/restaurants/:id` — single restaurant
-- `GET /api/restaurants/:id/menu` — menu grouped by category
-- `POST /api/orders` — place order
-- `GET /api/orders` — list orders
-- `GET /api/orders/:id` — get order
-- `GET /api/stats/overview` — platform stats
+### Auth
+- `POST /api/auth/signup` — register
+- `POST /api/auth/login` — login
+- `POST /api/auth/logout` — logout
+- `GET /api/auth/me` — current user
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+### Public
+- `GET /api/categories`
+- `GET /api/restaurants` — filter by categoryId, search, limit
+- `GET /api/restaurants/featured`
+- `GET /api/restaurants/:id`
+- `GET /api/restaurants/:id/menu`
+- `GET /api/stats/overview`
+- `POST /api/orders`
+- `GET /api/orders`
+- `GET /api/orders/:id`
+
+### Admin (requires admin role)
+- `GET /api/admin/orders` — filter by status
+- `PATCH /api/admin/orders/:id/status`
+- `POST /api/admin/restaurants`
+- `PATCH /api/admin/restaurants/:id`
+- `DELETE /api/admin/restaurants/:id`
+- `POST /api/admin/menu-items`
+- `PATCH /api/admin/menu-items/:id`
+- `DELETE /api/admin/menu-items/:id`
+- `GET /api/admin/stats`

@@ -13,6 +13,40 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type AuthUserRole = (typeof AuthUserRole)[keyof typeof AuthUserRole];
+
+export const AuthUserRole = {
+  customer: "customer",
+  admin: "admin",
+} as const;
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  role: AuthUserRole;
+}
+
+export type SignupBodyRole =
+  (typeof SignupBodyRole)[keyof typeof SignupBodyRole];
+
+export const SignupBodyRole = {
+  customer: "customer",
+  admin: "admin",
+} as const;
+
+export interface SignupBody {
+  name: string;
+  email: string;
+  password: string;
+  role?: SignupBodyRole;
+}
+
+export interface LoginBody {
+  email: string;
+  password: string;
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -83,6 +117,7 @@ export interface Order {
   status: OrderStatus;
   estimatedDelivery: string;
   createdAt: string;
+  userId?: number | null;
 }
 
 export type CreateOrderBodyItemsItem = {
@@ -98,6 +133,73 @@ export interface CreateOrderBody {
   customerPhone: string;
 }
 
+export type UpdateOrderStatusBodyStatus =
+  (typeof UpdateOrderStatusBodyStatus)[keyof typeof UpdateOrderStatusBodyStatus];
+
+export const UpdateOrderStatusBodyStatus = {
+  pending: "pending",
+  confirmed: "confirmed",
+  preparing: "preparing",
+  out_for_delivery: "out_for_delivery",
+  delivered: "delivered",
+  cancelled: "cancelled",
+} as const;
+
+export interface UpdateOrderStatusBody {
+  status: UpdateOrderStatusBodyStatus;
+}
+
+export interface CreateRestaurantBody {
+  name: string;
+  description: string;
+  imageUrl: string;
+  rating?: number;
+  reviewCount?: number;
+  deliveryTime: string;
+  minimumOrder: number;
+  categoryId: number;
+  categoryName: string;
+  address: string;
+  isOpen?: boolean;
+  isFeatured?: boolean;
+}
+
+export interface UpdateRestaurantBody {
+  name?: string;
+  description?: string;
+  imageUrl?: string;
+  rating?: number;
+  reviewCount?: number;
+  deliveryTime?: string;
+  minimumOrder?: number;
+  categoryId?: number;
+  categoryName?: string;
+  address?: string;
+  isOpen?: boolean;
+  isFeatured?: boolean;
+}
+
+export interface CreateMenuItemBody {
+  restaurantId: number;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  isAvailable?: boolean;
+  isPopular?: boolean;
+}
+
+export interface UpdateMenuItemBody {
+  name?: string;
+  description?: string;
+  price?: number;
+  imageUrl?: string;
+  category?: string;
+  isAvailable?: boolean;
+  isPopular?: boolean;
+}
+
 export interface StatsOverview {
   totalRestaurants: number;
   totalOrders: number;
@@ -105,8 +207,27 @@ export interface StatsOverview {
   avgDeliveryTime: string;
 }
 
+export interface AdminStats {
+  totalRestaurants: number;
+  totalOrders: number;
+  totalUsers: number;
+  totalRevenue: number;
+  pendingOrders: number;
+  deliveredOrders: number;
+  todayOrders: number;
+  totalMenuItems: number;
+}
+
+export type Logout200 = {
+  message: string;
+};
+
 export type ListRestaurantsParams = {
   categoryId?: number;
   search?: string;
   limit?: number;
+};
+
+export type AdminListOrdersParams = {
+  status?: string;
 };

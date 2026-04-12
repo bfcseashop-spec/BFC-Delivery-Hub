@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/lib/CartContext";
+import { AuthProvider } from "@/lib/AuthContext";
 
 import Home from "@/pages/Home";
 import Restaurants from "@/pages/Restaurants";
@@ -10,7 +11,16 @@ import RestaurantDetail from "@/pages/RestaurantDetail";
 import Checkout from "@/pages/Checkout";
 import Order from "@/pages/Order";
 import Orders from "@/pages/Orders";
+import MyOrders from "@/pages/MyOrders";
 import NotFound from "@/pages/not-found";
+
+import Login from "@/pages/auth/Login";
+import Signup from "@/pages/auth/Signup";
+
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminRestaurants from "@/pages/admin/AdminRestaurants";
+import AdminMenuItems from "@/pages/admin/AdminMenuItems";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +33,16 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/order/:id" component={Order} />
       <Route path="/orders" component={Orders} />
+      <Route path="/my-orders" component={MyOrders} />
+      
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/restaurants" component={AdminRestaurants} />
+      <Route path="/admin/menu-items" component={AdminMenuItems} />
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -31,14 +51,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </CartProvider>
+      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <AuthProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </CartProvider>
+        </AuthProvider>
+      </WouterRouter>
     </QueryClientProvider>
   );
 }

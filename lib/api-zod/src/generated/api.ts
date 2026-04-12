@@ -15,6 +15,48 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * @summary Register a new account
+ */
+export const SignupBody = zod.object({
+  name: zod.string(),
+  email: zod.string(),
+  password: zod.string(),
+  role: zod.enum(["customer", "admin"]).optional(),
+});
+
+/**
+ * @summary Login to account
+ */
+export const LoginBody = zod.object({
+  email: zod.string(),
+  password: zod.string(),
+});
+
+export const LoginResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["customer", "admin"]),
+});
+
+/**
+ * @summary Logout
+ */
+export const LogoutResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Get current user
+ */
+export const GetMeResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["customer", "admin"]),
+});
+
+/**
  * @summary List all food categories
  */
 export const ListCategoriesResponseItem = zod.object({
@@ -124,7 +166,7 @@ export const GetRestaurantMenuResponse = zod.array(
 );
 
 /**
- * @summary List orders
+ * @summary List orders for current user
  */
 export const ListOrdersResponseItem = zod.object({
   id: zod.number(),
@@ -152,6 +194,7 @@ export const ListOrdersResponseItem = zod.object({
   ]),
   estimatedDelivery: zod.string(),
   createdAt: zod.string(),
+  userId: zod.number().nullish(),
 });
 export const ListOrdersResponse = zod.array(ListOrdersResponseItem);
 
@@ -204,6 +247,7 @@ export const GetOrderResponse = zod.object({
   ]),
   estimatedDelivery: zod.string(),
   createdAt: zod.string(),
+  userId: zod.number().nullish(),
 });
 
 /**
@@ -214,4 +258,215 @@ export const GetStatsOverviewResponse = zod.object({
   totalOrders: zod.number(),
   totalCategories: zod.number(),
   avgDeliveryTime: zod.string(),
+});
+
+/**
+ * @summary Admin - list all orders
+ */
+export const AdminListOrdersQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+});
+
+export const AdminListOrdersResponseItem = zod.object({
+  id: zod.number(),
+  restaurantId: zod.number(),
+  restaurantName: zod.string(),
+  items: zod.array(
+    zod.object({
+      menuItemId: zod.number(),
+      name: zod.string(),
+      price: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
+  totalAmount: zod.number(),
+  deliveryAddress: zod.string(),
+  customerName: zod.string(),
+  customerPhone: zod.string(),
+  status: zod.enum([
+    "pending",
+    "confirmed",
+    "preparing",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ]),
+  estimatedDelivery: zod.string(),
+  createdAt: zod.string(),
+  userId: zod.number().nullish(),
+});
+export const AdminListOrdersResponse = zod.array(AdminListOrdersResponseItem);
+
+/**
+ * @summary Admin - update order status
+ */
+export const AdminUpdateOrderStatusParams = zod.object({
+  orderId: zod.coerce.number(),
+});
+
+export const AdminUpdateOrderStatusBody = zod.object({
+  status: zod.enum([
+    "pending",
+    "confirmed",
+    "preparing",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ]),
+});
+
+export const AdminUpdateOrderStatusResponse = zod.object({
+  id: zod.number(),
+  restaurantId: zod.number(),
+  restaurantName: zod.string(),
+  items: zod.array(
+    zod.object({
+      menuItemId: zod.number(),
+      name: zod.string(),
+      price: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
+  totalAmount: zod.number(),
+  deliveryAddress: zod.string(),
+  customerName: zod.string(),
+  customerPhone: zod.string(),
+  status: zod.enum([
+    "pending",
+    "confirmed",
+    "preparing",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ]),
+  estimatedDelivery: zod.string(),
+  createdAt: zod.string(),
+  userId: zod.number().nullish(),
+});
+
+/**
+ * @summary Admin - create a restaurant
+ */
+export const AdminCreateRestaurantBody = zod.object({
+  name: zod.string(),
+  description: zod.string(),
+  imageUrl: zod.string(),
+  rating: zod.number().optional(),
+  reviewCount: zod.number().optional(),
+  deliveryTime: zod.string(),
+  minimumOrder: zod.number(),
+  categoryId: zod.number(),
+  categoryName: zod.string(),
+  address: zod.string(),
+  isOpen: zod.boolean().optional(),
+  isFeatured: zod.boolean().optional(),
+});
+
+/**
+ * @summary Admin - update a restaurant
+ */
+export const AdminUpdateRestaurantParams = zod.object({
+  restaurantId: zod.coerce.number(),
+});
+
+export const AdminUpdateRestaurantBody = zod.object({
+  name: zod.string().optional(),
+  description: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  rating: zod.number().optional(),
+  reviewCount: zod.number().optional(),
+  deliveryTime: zod.string().optional(),
+  minimumOrder: zod.number().optional(),
+  categoryId: zod.number().optional(),
+  categoryName: zod.string().optional(),
+  address: zod.string().optional(),
+  isOpen: zod.boolean().optional(),
+  isFeatured: zod.boolean().optional(),
+});
+
+export const AdminUpdateRestaurantResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  imageUrl: zod.string(),
+  rating: zod.number(),
+  reviewCount: zod.number(),
+  deliveryTime: zod.string(),
+  minimumOrder: zod.number(),
+  categoryId: zod.number(),
+  categoryName: zod.string(),
+  address: zod.string(),
+  isOpen: zod.boolean(),
+  isFeatured: zod.boolean(),
+});
+
+/**
+ * @summary Admin - delete a restaurant
+ */
+export const AdminDeleteRestaurantParams = zod.object({
+  restaurantId: zod.coerce.number(),
+});
+
+/**
+ * @summary Admin - create a menu item
+ */
+export const AdminCreateMenuItemBody = zod.object({
+  restaurantId: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  price: zod.number(),
+  imageUrl: zod.string(),
+  category: zod.string(),
+  isAvailable: zod.boolean().optional(),
+  isPopular: zod.boolean().optional(),
+});
+
+/**
+ * @summary Admin - update a menu item
+ */
+export const AdminUpdateMenuItemParams = zod.object({
+  menuItemId: zod.coerce.number(),
+});
+
+export const AdminUpdateMenuItemBody = zod.object({
+  name: zod.string().optional(),
+  description: zod.string().optional(),
+  price: zod.number().optional(),
+  imageUrl: zod.string().optional(),
+  category: zod.string().optional(),
+  isAvailable: zod.boolean().optional(),
+  isPopular: zod.boolean().optional(),
+});
+
+export const AdminUpdateMenuItemResponse = zod.object({
+  id: zod.number(),
+  restaurantId: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  price: zod.number(),
+  imageUrl: zod.string(),
+  category: zod.string(),
+  isAvailable: zod.boolean(),
+  isPopular: zod.boolean(),
+});
+
+/**
+ * @summary Admin - delete a menu item
+ */
+export const AdminDeleteMenuItemParams = zod.object({
+  menuItemId: zod.coerce.number(),
+});
+
+/**
+ * @summary Admin - get detailed platform stats
+ */
+export const AdminGetStatsResponse = zod.object({
+  totalRestaurants: zod.number(),
+  totalOrders: zod.number(),
+  totalUsers: zod.number(),
+  totalRevenue: zod.number(),
+  pendingOrders: zod.number(),
+  deliveredOrders: zod.number(),
+  todayOrders: zod.number(),
+  totalMenuItems: zod.number(),
 });
