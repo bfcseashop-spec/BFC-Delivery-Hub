@@ -50,7 +50,7 @@ export function MenuItemCard({ item, restaurantId, restaurantName }: MenuItemCar
   const priceLabel = hasOptions ? `from $${lowestPrice.toFixed(2)}` : `$${item.price.toFixed(2)}`;
 
   return (
-    <>
+    <div>
       <div className={cn(
         "flex gap-4 p-4 rounded-xl border border-border bg-card transition-all",
         !item.isAvailable && "opacity-60 grayscale-[0.5]"
@@ -203,6 +203,6 @@ export function MenuItemCard({ item, restaurantId, restaurantName }: MenuItemCar
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
