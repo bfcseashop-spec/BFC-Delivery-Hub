@@ -162,6 +162,7 @@ router.post("/admin/menu-items", async (req, res): Promise<void> => {
     description: parsed.data.description,
     price: parsed.data.price,
     imageUrl: parsed.data.imageUrl,
+    images: parsed.data.images ?? "[]",
     category: parsed.data.category,
     isAvailable: parsed.data.isAvailable ?? true,
     isPopular: parsed.data.isPopular ?? false,
@@ -188,6 +189,7 @@ router.patch("/admin/menu-items/:menuItemId", async (req, res): Promise<void> =>
   if (parsed.data.description != null) updates.description = parsed.data.description;
   if (parsed.data.price != null) updates.price = parsed.data.price;
   if (parsed.data.imageUrl != null) updates.imageUrl = parsed.data.imageUrl;
+  if (parsed.data.images != null) updates.images = parsed.data.images;
   if (parsed.data.category != null) updates.category = parsed.data.category;
   if (parsed.data.isAvailable != null) updates.isAvailable = parsed.data.isAvailable;
   if (parsed.data.isPopular != null) updates.isPopular = parsed.data.isPopular;

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Trash2, UtensilsCrossed, Star, FolderPlus, X, Check, ListOrdered } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, UtensilsCrossed, Star, FolderPlus, X, Check, ListOrdered, ImagePlus, Upload, Image, ChevronLeft, ChevronRight } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 function adminApi(path: string, init?: RequestInit) {
@@ -19,12 +19,16 @@ function adminApi(path: string, init?: RequestInit) {
 }
 
 interface RestaurantCategory { id: number; restaurantId: number; name: string; displayOrder: number; }
-interface MenuItem { id: number; restaurantId: number; name: string; description: string; price: number; imageUrl: string; category: string; isAvailable: boolean; isPopular: boolean; }
+interface MenuItem { id: number; restaurantId: number; name: string; description: string; price: number; imageUrl: string; images?: string; category: string; isAvailable: boolean; isPopular: boolean; }
 interface MenuSection { category: string; items: MenuItem[]; }
 interface MenuItemOption { id: number; menuItemId: number; name: string; price: number; displayOrder: number; }
 
 const EMPTY_FORM = { name: "", description: "", price: "", category: "", imageUrl: "", isAvailable: true, isPopular: false };
 const EMPTY_OPTION = { name: "", price: "" };
+
+function parseImages(raw: string | null | undefined): string[] {
+  try { return JSON.parse(raw || "[]") || []; } catch { return raw ? [raw] : []; }
+}
 
 function useCategoriesKey(restaurantId: number | null) {
   return ["admin-categories", restaurantId];
@@ -52,6 +56,9 @@ export default function AdminMenuItems() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [imagesList, setImagesList] = useState<string[]>([]);
+  const [urlInput, setUrlInput] = useState("");
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
 
   // Options state (for item dialog)
   const [pendingOptions, setPendingOptions] = useState<{ name: string; price: string }[]>([]);
@@ -124,6 +131,8 @@ export default function AdminMenuItems() {
   function openCreate() {
     setEditing(null);
     setForm({ ...EMPTY_FORM, category: selectedCategory ?? "" });
+    setImagesList([]);
+    setUrlInput("");
     setPendingOptions([]);
     setNewOption(EMPTY_OPTION);
     setDialogOpen(true);
@@ -132,6 +141,9 @@ export default function AdminMenuItems() {
   function openEdit(item: MenuItem) {
     setEditing(item);
     setForm({ name: item.name, description: item.description, price: String(item.price), category: item.category, imageUrl: item.imageUrl, isAvailable: item.isAvailable, isPopular: item.isPopular });
+    const imgs = parseImages(item.images);
+    setImagesList(item.imageUrl ? [item.imageUrl, ...imgs.filter(u => u !== item.imageUrl)] : imgs);
+    setUrlInput("");
     setPendingOptions([]);
     setNewOption(EMPTY_OPTION);
     setDialogOpen(true);
@@ -167,9 +179,11 @@ export default function AdminMenuItems() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const primaryImage = imagesList[0] || form.imageUrl || "";
       const body = {
         name: form.name, description: form.description, price: parseFloat(form.price) || 0,
-        category: form.category, imageUrl: form.imageUrl,
+        category: form.category, imageUrl: primaryImage,
+        images: JSON.stringify(imagesList),
         isAvailable: form.isAvailable, isPopular: form.isPopular,
         restaurantId: selectedRestaurantId,
       };
@@ -232,6 +246,44 @@ export default function AdminMenuItems() {
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  async function uploadImageFile(file: File): Promise<string | null> {
+    const fd = new FormData();
+    fd.append("image", file);
+    const res = await adminApi("/admin/upload", { method: "POST", body: fd });
+    if (!res.ok) { toast({ title: "Upload failed", variant: "destructive" }); return null; }
+    const { url } = await res.json();
+    return url as string;
+  }
+
+  async function handleFileUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    for (let i = 0; i < files.length; i++) {
+      setUploadingIdx(i);
+      const url = await uploadImageFile(files[i]);
+      if (url) setImagesList(prev => [...prev, url]);
+    }
+    setUploadingIdx(null);
+  }
+
+  function addUrlToList() {
+    const u = urlInput.trim();
+    if (!u) return;
+    setImagesList(prev => [...prev, u]);
+    setUrlInput("");
+  }
+
+  function removeImage(idx: number) {
+    setImagesList(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  function setPrimary(idx: number) {
+    setImagesList(prev => {
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      return [item, ...next];
+    });
+  }
 
   function addPendingOption() {
     if (!newOption.name.trim()) return;
@@ -497,12 +549,104 @@ export default function AdminMenuItems() {
                   {categories.map(c => <option key={c.id} value={c.name} />)}
                 </datalist>
               </div>
-              <div className="col-span-2">
-                <Label>Image URL</Label>
-                <Input value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." />
-                {form.imageUrl && (
-                  <img src={form.imageUrl} alt="preview" className="mt-2 h-20 w-32 object-cover rounded-lg border" onError={e => (e.currentTarget.style.display = "none")} />
+              {/* ── Multi-image upload section ── */}
+              <div className="col-span-2 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Image className="w-4 h-4 text-primary" />
+                  <Label className="font-bold">Product Images</Label>
+                  <span className="text-xs text-zinc-400">({imagesList.length} image{imagesList.length !== 1 ? "s" : ""} · first is primary)</span>
+                </div>
+
+                {/* Existing thumbnails grid */}
+                {imagesList.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {imagesList.map((url, idx) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border-2 aspect-square bg-zinc-100" style={{ borderColor: idx === 0 ? "#E8472A" : "transparent" }}>
+                        <img src={url} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).src = ""; }} />
+                        {/* Primary badge */}
+                        {idx === 0 && (
+                          <span className="absolute top-1 left-1 bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">PRIMARY</span>
+                        )}
+                        {/* Hover controls */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5">
+                          {idx !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setPrimary(idx)}
+                              className="text-[10px] font-bold bg-primary text-white px-2 py-1 rounded-full hover:bg-primary/90 transition"
+                            >
+                              Set Primary
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(idx)}
+                            className="text-[10px] font-bold bg-red-500 text-white px-2 py-1 rounded-full hover:bg-red-600 transition flex items-center gap-1"
+                          >
+                            <X className="w-2.5 h-2.5" /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Add placeholder slot */}
+                    <label className="aspect-square border-2 border-dashed border-zinc-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition">
+                      {uploadingIdx !== null ? (
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <ImagePlus className="w-5 h-5 text-zinc-400 mb-1" />
+                          <span className="text-[10px] text-zinc-400 font-bold">Add</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={e => handleFileUpload(e.target.files)}
+                      />
+                    </label>
+                  </div>
                 )}
+
+                {/* Upload + URL add row (shown when no images yet) */}
+                {imagesList.length === 0 && (
+                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-zinc-300 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition">
+                    {uploadingIdx !== null ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-zinc-500">Uploading…</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-7 h-7 text-zinc-400 mb-1" />
+                        <span className="text-sm font-bold text-zinc-500">Click to upload images</span>
+                        <span className="text-xs text-zinc-400">JPG, PNG, WebP · max 5MB each · multiple allowed</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => handleFileUpload(e.target.files)}
+                    />
+                  </label>
+                )}
+
+                {/* URL input row */}
+                <div className="flex gap-2">
+                  <Input
+                    value={urlInput}
+                    onChange={e => setUrlInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addUrlToList(); } }}
+                    placeholder="Or paste an image URL and press Add →"
+                    className="flex-1 h-9 text-sm"
+                  />
+                  <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 gap-1 border-primary text-primary hover:bg-primary hover:text-white" onClick={addUrlToList} disabled={!urlInput.trim()}>
+                    <Plus className="w-3.5 h-3.5" /> Add URL
+                  </Button>
+                </div>
               </div>
             </div>
 

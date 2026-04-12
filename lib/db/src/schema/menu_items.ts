@@ -9,6 +9,7 @@ export const menuItemsTable = pgTable("menu_items", {
   description: text("description").notNull(),
   price: real("price").notNull(),
   imageUrl: text("image_url").notNull(),
+  images: text("images").default("[]"),
   category: text("category").notNull(),
   isAvailable: boolean("is_available").notNull().default(true),
   isPopular: boolean("is_popular").notNull().default(false),
