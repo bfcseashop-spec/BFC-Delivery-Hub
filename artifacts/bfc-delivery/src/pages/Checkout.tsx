@@ -35,7 +35,7 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const { items, totalPrice, restaurantId, restaurantName, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const createOrder = useCreateOrder();
   
   const form = useForm<CheckoutFormValues>({
@@ -52,6 +52,31 @@ export default function Checkout() {
       form.setValue("customerName", user.name);
     }
   }, [user, form]);
+
+  // Wait for auth to resolve before checking
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!user) {
+      setLocation("/login");
+    } else if (user.role !== "customer") {
+      setLocation("/");
+    }
+  }, [user, isAuthLoading, setLocation]);
+
+  // Show nothing while auth is loading or redirecting
+  if (isAuthLoading || !user || user.role !== "customer") {
+    return (
+      <div className="min-h-screen flex flex-col bg-zinc-50">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-zinc-500 font-medium">Checking your account…</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

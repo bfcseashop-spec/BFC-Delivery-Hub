@@ -20,6 +20,15 @@ router.get("/orders", async (_req, res): Promise<void> => {
 });
 
 router.post("/orders", async (req, res): Promise<void> => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "You must be logged in to place an order." });
+    return;
+  }
+  if (req.session.userRole !== "customer") {
+    res.status(403).json({ error: "Only customer accounts can place orders." });
+    return;
+  }
+
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

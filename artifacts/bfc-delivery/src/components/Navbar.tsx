@@ -271,11 +271,30 @@ export function Navbar() {
                     </div>
 
                     {/* Actions */}
-                    <Link href="/checkout" onClick={() => setCartOpen(false)}>
-                      <Button className="w-full h-12 text-base font-black rounded-xl">
-                        Proceed to Checkout →
-                      </Button>
-                    </Link>
+                    {!user ? (
+                      <div className="space-y-2">
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+                          <p className="text-sm font-semibold text-amber-800 mb-0.5">Sign in to place your order</p>
+                          <p className="text-xs text-amber-600">Your cart will be saved while you log in</p>
+                        </div>
+                        <Link href="/login" onClick={() => setCartOpen(false)}>
+                          <Button className="w-full h-12 text-base font-black rounded-xl">
+                            Sign In to Order →
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : user.role === "admin" ? (
+                      <div className="bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-center">
+                        <p className="text-sm font-semibold text-zinc-700">Admin accounts cannot place orders</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">Use a customer account to order</p>
+                      </div>
+                    ) : (
+                      <Link href="/checkout" onClick={() => setCartOpen(false)}>
+                        <Button className="w-full h-12 text-base font-black rounded-xl">
+                          Proceed to Checkout →
+                        </Button>
+                      </Link>
+                    )}
                     <button
                       onClick={() => { clearCart(); }}
                       className="w-full text-xs text-muted-foreground hover:text-destructive font-semibold flex items-center justify-center gap-1 py-1 transition"
