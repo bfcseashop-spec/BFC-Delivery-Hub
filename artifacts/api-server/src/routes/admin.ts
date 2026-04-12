@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable } from "@workspace/db";
+import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable } from "@workspace/db";
 import { eq, and, asc, type SQL } from "drizzle-orm";
 import {
   AdminListOrdersResponse,
@@ -243,6 +243,49 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     todayOrders,
     totalMenuItems: menuItems.length,
   }));
+});
+
+// ---- Hero Banners (carousel) CRUD ----
+
+router.get("/admin/landing/hero-banners", async (_req, res): Promise<void> => {
+  const banners = await db.select().from(heroBannersTable).orderBy(asc(heroBannersTable.displayOrder));
+  res.json(banners);
+});
+
+router.post("/admin/landing/hero-banners", async (req, res): Promise<void> => {
+  const { title, subtitle, ctaText, ctaLink, emoji, gradient, isActive, displayOrder } = req.body;
+  if (!title) { res.status(400).json({ error: "title is required" }); return; }
+  const [banner] = await db.insert(heroBannersTable).values({
+    title, subtitle: subtitle ?? "", ctaText: ctaText ?? "Sign up free", ctaLink: ctaLink ?? "/signup",
+    emoji: emoji ?? "🛵", gradient: gradient ?? "from-orange-50 to-amber-50",
+    isActive: isActive ?? true, displayOrder: displayOrder ?? 0,
+  }).returning();
+  res.status(201).json(banner);
+});
+
+router.patch("/admin/landing/hero-banners/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { title, subtitle, ctaText, ctaLink, emoji, gradient, isActive, displayOrder } = req.body;
+  const updates: Partial<typeof heroBannersTable.$inferInsert> = {};
+  if (title != null) updates.title = title;
+  if (subtitle != null) updates.subtitle = subtitle;
+  if (ctaText != null) updates.ctaText = ctaText;
+  if (ctaLink != null) updates.ctaLink = ctaLink;
+  if (emoji != null) updates.emoji = emoji;
+  if (gradient != null) updates.gradient = gradient;
+  if (isActive != null) updates.isActive = isActive;
+  if (displayOrder != null) updates.displayOrder = displayOrder;
+  const [banner] = await db.update(heroBannersTable).set(updates).where(eq(heroBannersTable.id, id)).returning();
+  if (!banner) { res.status(404).json({ error: "Banner not found" }); return; }
+  res.json(banner);
+});
+
+router.delete("/admin/landing/hero-banners/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(heroBannersTable).where(eq(heroBannersTable.id, id));
+  res.sendStatus(204);
 });
 
 // ---- Promo Banners CRUD ----

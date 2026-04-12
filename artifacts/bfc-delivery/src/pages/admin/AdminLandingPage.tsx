@@ -16,7 +16,12 @@ import {
   Eye, EyeOff,
 } from "lucide-react";
 
-type Tab = "banners" | "filters" | "settings";
+type Tab = "hero-banners" | "banners" | "filters" | "settings";
+
+interface HeroBanner {
+  id: number; title: string; subtitle: string; ctaText: string;
+  ctaLink: string; emoji: string; gradient: string; isActive: boolean; displayOrder: number;
+}
 
 interface PromoBanner {
   id: number; title: string; subtitle: string; badge: string;
@@ -457,13 +462,215 @@ function SettingsTab() {
 }
 
 // ──────────────────────────────────────────────────────────
+// Hero Banners Tab
+// ──────────────────────────────────────────────────────────
+const HERO_GRADIENTS = [
+  { label: "Warm Cream", value: "from-orange-50 to-amber-50" },
+  { label: "Soft Green", value: "from-green-50 to-emerald-50" },
+  { label: "Soft Blue", value: "from-blue-50 to-indigo-50" },
+  { label: "Soft Purple", value: "from-purple-50 to-violet-50" },
+  { label: "Soft Rose", value: "from-rose-50 to-pink-50" },
+  { label: "Soft Teal", value: "from-teal-50 to-cyan-50" },
+  { label: "Soft Yellow", value: "from-yellow-50 to-lime-50" },
+];
+
+function HeroBannersTab() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<HeroBanner | null>(null);
+  const [form, setForm] = useState({ title: "", subtitle: "", ctaText: "Sign up free", ctaLink: "/signup", emoji: "🛵", gradient: HERO_GRADIENTS[0].value, displayOrder: "0" });
+
+  const { data: banners = [], isLoading } = useQuery<HeroBanner[]>({
+    queryKey: ["admin-hero-banners"],
+    queryFn: () => api("/admin/landing/hero-banners").then(r => r.json()),
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const body = { ...form, displayOrder: parseInt(form.displayOrder) || 0 };
+      if (editing) {
+        return api(`/admin/landing/hero-banners/${editing.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      }
+      return api("/admin/landing/hero-banners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-hero-banners"] });
+      qc.removeQueries({ queryKey: ["landing-hero-banners"] });
+      setOpen(false);
+      toast({ title: editing ? "Banner updated" : "Banner created" });
+    },
+    onError: () => toast({ title: "Error saving banner", variant: "destructive" }),
+  });
+
+  const toggle = useMutation({
+    mutationFn: (b: HeroBanner) => api(`/admin/landing/hero-banners/${b.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !b.isActive }) }),
+    onSuccess: (_data, b) => {
+      qc.setQueryData<HeroBanner[]>(["admin-hero-banners"], old =>
+        old?.map(item => item.id === b.id ? { ...item, isActive: !b.isActive } : item) ?? []
+      );
+      qc.removeQueries({ queryKey: ["landing-hero-banners"] });
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => api(`/admin/landing/hero-banners/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-hero-banners"] });
+      qc.removeQueries({ queryKey: ["landing-hero-banners"] });
+      toast({ title: "Banner deleted" });
+    },
+    onError: () => toast({ title: "Error deleting banner", variant: "destructive" }),
+  });
+
+  function openCreate() {
+    setEditing(null);
+    setForm({ title: "", subtitle: "", ctaText: "Sign up free", ctaLink: "/signup", emoji: "🛵", gradient: HERO_GRADIENTS[0].value, displayOrder: String(banners.length + 1) });
+    setOpen(true);
+  }
+
+  function openEdit(b: HeroBanner) {
+    setEditing(b);
+    setForm({ title: b.title, subtitle: b.subtitle, ctaText: b.ctaText, ctaLink: b.ctaLink, emoji: b.emoji, gradient: b.gradient, displayOrder: String(b.displayOrder) });
+    setOpen(true);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold">Hero Banners</h2>
+          <p className="text-sm text-muted-foreground">Manage the rotating hero banners shown at the top of the homepage. Multiple active banners auto-rotate every 5 seconds.</p>
+        </div>
+        <Button onClick={openCreate} style={{ backgroundColor: "#E8472A" }} className="text-white gap-2">
+          <Plus className="w-4 h-4" /> Add Banner
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      ) : banners.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            No hero banners yet. Click "Add Banner" to create your first one.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {banners.map(b => (
+            <Card key={b.id} className={b.isActive ? "" : "opacity-50"}>
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${b.gradient} flex items-center justify-center text-2xl border border-zinc-100 shrink-0`}>
+                  {b.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-bold text-zinc-900 truncate">{b.title}</span>
+                    <Badge variant={b.isActive ? "default" : "secondary"} className={b.isActive ? "bg-green-100 text-green-800 border-0" : ""}>
+                      {b.isActive ? "Active" : "Off"}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground ml-1">Order: {b.displayOrder}</span>
+                  </div>
+                  {b.subtitle && <p className="text-sm text-zinc-500 truncate">{b.subtitle}</p>}
+                  <p className="text-xs text-primary font-medium mt-0.5">Button: "{b.ctaText}" → {b.ctaLink}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Switch checked={b.isActive} onCheckedChange={() => toggle.mutate(b)} />
+                  <Button size="icon" variant="ghost" onClick={() => openEdit(b)}>
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => remove.mutate(b.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Hero Banner" : "New Hero Banner"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Title *</Label>
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Hungry? We've Got You Covered" />
+            </div>
+            <div>
+              <Label>Subtitle</Label>
+              <Input value={form.subtitle} onChange={e => setForm(f => ({ ...f, subtitle: e.target.value }))} placeholder="Free delivery, 24/7" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Button Text</Label>
+                <Input value={form.ctaText} onChange={e => setForm(f => ({ ...f, ctaText: e.target.value }))} placeholder="Sign up free" />
+              </div>
+              <div>
+                <Label>Button Link</Label>
+                <Input value={form.ctaLink} onChange={e => setForm(f => ({ ...f, ctaLink: e.target.value }))} placeholder="/signup" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Emoji</Label>
+                <Input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))} placeholder="🛵" />
+              </div>
+              <div>
+                <Label>Display Order</Label>
+                <Input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Background Style</Label>
+              <div className="grid grid-cols-4 gap-2 mt-2">
+                {HERO_GRADIENTS.map(g => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, gradient: g.value }))}
+                    className={`h-10 rounded-lg bg-gradient-to-r ${g.value} border-2 transition ${form.gradient === g.value ? "border-primary scale-105" : "border-transparent"}`}
+                    title={g.label}
+                  />
+                ))}
+              </div>
+              <div className={`mt-2 rounded-xl bg-gradient-to-r ${form.gradient} border border-zinc-200 flex items-center justify-between px-4 py-3 gap-4`}>
+                <div>
+                  <p className="font-bold text-zinc-900 text-sm">{form.title || "Banner Title"}</p>
+                  {form.subtitle && <p className="text-xs text-zinc-500">{form.subtitle}</p>}
+                  <span className="mt-1 inline-block text-xs font-semibold bg-primary text-white px-3 py-1 rounded-md">
+                    {form.ctaText || "Sign up free"}
+                  </span>
+                </div>
+                <div className="text-4xl">{form.emoji || "🛵"}</div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.title} style={{ backgroundColor: "#E8472A" }}>
+              {save.isPending ? "Saving..." : editing ? "Save Changes" : "Create Banner"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
 // Main Page
 // ──────────────────────────────────────────────────────────
 export default function AdminLandingPage() {
-  const [tab, setTab] = useState<Tab>("banners");
+  const [tab, setTab] = useState<Tab>("hero-banners");
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "banners", label: "Promo Banners", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: "hero-banners", label: "Hero Carousel", icon: <Eye className="w-4 h-4" /> },
+    { id: "banners", label: "Deal Banners", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "filters", label: "Quick Filters", icon: <SlidersHorizontal className="w-4 h-4" /> },
     { id: "settings", label: "Page Settings", icon: <Settings2 className="w-4 h-4" /> },
   ];
@@ -472,7 +679,7 @@ export default function AdminLandingPage() {
     <AdminLayout title="Landing Page">
       <div className="space-y-6">
         {/* Tab bar */}
-        <div className="flex gap-1 p-1 bg-zinc-100 rounded-lg w-fit">
+        <div className="flex gap-1 p-1 bg-zinc-100 rounded-lg w-fit flex-wrap">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -484,6 +691,7 @@ export default function AdminLandingPage() {
           ))}
         </div>
 
+        {tab === "hero-banners" && <HeroBannersTab />}
         {tab === "banners" && <BannersTab />}
         {tab === "filters" && <FiltersTab />}
         {tab === "settings" && <SettingsTab />}

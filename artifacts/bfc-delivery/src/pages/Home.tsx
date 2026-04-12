@@ -10,9 +10,14 @@ import {
   getListCategoriesQueryKey,
   getListRestaurantsQueryKey,
 } from "@workspace/api-client-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+
+interface HeroBanner {
+  id: number; title: string; subtitle: string; ctaText: string;
+  ctaLink: string; emoji: string; gradient: string; isActive: boolean; displayOrder: number;
+}
 
 interface PromoBanner {
   id: number; title: string; subtitle: string; badge: string;
@@ -115,6 +120,11 @@ export default function Home() {
     { query: { queryKey: getListRestaurantsQueryKey({}) } }
   );
 
+  const { data: heroBanners = [] } = useQuery<HeroBanner[]>({
+    queryKey: ["landing-hero-banners"],
+    queryFn: () => landingApi("/landing/hero-banners"),
+  });
+
   const { data: dealBanners = [] } = useQuery<PromoBanner[]>({
     queryKey: ["landing-banners"],
     queryFn: () => landingApi("/landing/banners"),
@@ -129,6 +139,14 @@ export default function Home() {
     queryKey: ["landing-settings"],
     queryFn: () => landingApi("/landing/settings"),
   });
+
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    if (heroBanners.length <= 1) return;
+    const t = setInterval(() => setHeroIndex(i => (i + 1) % heroBanners.length), 5000);
+    return () => clearInterval(t);
+  }, [heroBanners.length]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -430,23 +448,65 @@ export default function Home() {
             {/* MAIN CONTENT */}
             <div className="flex-1 min-w-0 space-y-8">
 
-              {/* Hero Banner — fully driven by admin Page Settings */}
-              <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 flex items-center justify-between px-8 py-5 gap-4">
-                <div>
-                  <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1 whitespace-pre-line">
-                    {heroTitle}
-                  </h2>
-                  {heroSubtitle && (
-                    <p className="text-sm text-zinc-600 mb-2">{heroSubtitle}</p>
+              {/* Hero Banner Carousel — admin-managed, auto-rotating */}
+              {heroBanners.length > 0 ? (
+                <div className="relative overflow-hidden rounded-2xl">
+                  <div
+                    className="flex transition-transform duration-700 ease-in-out"
+                    style={{ transform: `translateX(-${heroIndex * 100}%)` }}
+                  >
+                    {heroBanners.map((banner) => (
+                      <div
+                        key={banner.id}
+                        className={`min-w-full bg-gradient-to-r ${banner.gradient} border border-orange-100 flex items-center justify-between px-8 py-5 gap-4 rounded-2xl`}
+                      >
+                        <div>
+                          <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1 whitespace-pre-line">
+                            {banner.title}
+                          </h2>
+                          {banner.subtitle && (
+                            <p className="text-sm text-zinc-600 mb-2">{banner.subtitle}</p>
+                          )}
+                          <Link href={banner.ctaLink || "/signup"}>
+                            <button className="mt-2 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
+                              {banner.ctaText || "Sign up free"}
+                            </button>
+                          </Link>
+                        </div>
+                        <div className="text-7xl shrink-0 select-none hidden sm:block">{banner.emoji}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {heroBanners.length > 1 && (
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {heroBanners.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setHeroIndex(i)}
+                          className={`w-2 h-2 rounded-full transition-all ${i === heroIndex ? "bg-primary w-4" : "bg-zinc-400/60"}`}
+                        />
+                      ))}
+                    </div>
                   )}
-                  <Link href="/signup">
-                    <button className="mt-2 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
-                      {heroCta}
-                    </button>
-                  </Link>
                 </div>
-                <div className="text-7xl shrink-0 select-none hidden sm:block">{heroEmoji}</div>
-              </div>
+              ) : (
+                <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 flex items-center justify-between px-8 py-5 gap-4">
+                  <div>
+                    <h2 className="text-xl font-black text-zinc-900 leading-tight mb-1 whitespace-pre-line">
+                      {heroTitle}
+                    </h2>
+                    {heroSubtitle && (
+                      <p className="text-sm text-zinc-600 mb-2">{heroSubtitle}</p>
+                    )}
+                    <Link href="/signup">
+                      <button className="mt-2 bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg hover:bg-primary/90 transition">
+                        {heroCta}
+                      </button>
+                    </Link>
+                  </div>
+                  <div className="text-7xl shrink-0 select-none hidden sm:block">{heroEmoji}</div>
+                </div>
+              )}
 
               {/* Your favourite cuisines */}
               <section>

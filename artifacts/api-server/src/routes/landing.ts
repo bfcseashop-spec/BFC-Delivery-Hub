@@ -1,8 +1,17 @@
 import { Router, type IRouter } from "express";
-import { db, promoBannersTable, quickFiltersTable, pageSettingsTable } from "@workspace/db";
+import { db, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 
 const router: IRouter = Router();
+
+router.get("/landing/hero-banners", async (_req, res): Promise<void> => {
+  const banners = await db
+    .select()
+    .from(heroBannersTable)
+    .where(eq(heroBannersTable.isActive, true))
+    .orderBy(asc(heroBannersTable.displayOrder));
+  res.json(banners);
+});
 
 router.get("/landing/banners", async (_req, res): Promise<void> => {
   const banners = await db

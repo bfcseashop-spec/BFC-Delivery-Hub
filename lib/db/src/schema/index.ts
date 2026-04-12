@@ -6,3 +6,4 @@ export * from "./users";
 export * from "./promo_banners";
 export * from "./quick_filters";
 export * from "./page_settings";
+export * from "./hero_banners";
