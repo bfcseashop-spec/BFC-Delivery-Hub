@@ -1,9 +1,11 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { useListRestaurants, getListRestaurantsQueryKey, useAdminDeleteRestaurant } from "@workspace/api-client-react";
+import { useListRestaurants, getListRestaurantsQueryKey } from "@workspace/api-client-react";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Loader2, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Search, UtensilsCrossed } from "lucide-react";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,23 +15,26 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 export default function AdminRestaurants() {
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   const { data: restaurants, isLoading } = useListRestaurants(
     { search: search || undefined }, 
     { query: { queryKey: getListRestaurantsQueryKey({ search: search || undefined }) } }
   );
 
-  const deleteMutation = useAdminDeleteRestaurant();
+  const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteMutation.mutateAsync({ id });
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) =>
+      fetch(`${BASE}/api/admin/restaurants/${id}`, { method: "DELETE", credentials: "include" }),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
       toast.success("Restaurant deleted");
-    } catch (err) {
-      toast.error("Failed to delete restaurant");
-    }
-  };
+    },
+    onError: () => toast.error("Failed to delete restaurant"),
+  });
+
+  const handleDelete = (id: number) => deleteMutation.mutate(id);
 
   return (
     <AdminLayout title="Manage Restaurants">
@@ -68,6 +73,7 @@ export default function AdminRestaurants() {
                     <th className="h-12 px-6 text-left align-middle font-bold text-muted-foreground">Category</th>
                     <th className="h-12 px-6 text-center align-middle font-bold text-muted-foreground">Status</th>
                     <th className="h-12 px-6 text-right align-middle font-bold text-muted-foreground">Actions</th>
+                    <th className="h-12 px-4 text-right align-middle font-bold text-muted-foreground">Menu</th>
                   </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
@@ -118,6 +124,16 @@ export default function AdminRestaurants() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
+                      </td>
+                      <td className="p-4 align-middle text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 font-semibold border-primary text-primary hover:bg-primary hover:text-white"
+                          onClick={() => setLocation(`/admin/menu-items?restaurant=${restaurant.id}`)}
+                        >
+                          <UtensilsCrossed className="w-3.5 h-3.5" /> Menu
+                        </Button>
                       </td>
                     </tr>
                   ))}
