@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable } from "@workspace/db";
+import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable, restaurantCategoriesTable, menuItemOptionsTable } from "@workspace/db";
 import { eq, and, asc, type SQL } from "drizzle-orm";
 import {
   AdminListOrdersResponse,
@@ -214,6 +214,91 @@ router.delete("/admin/menu-items/:menuItemId", async (req, res): Promise<void> =
   }
 
   await db.delete(menuItemsTable).where(eq(menuItemsTable.id, params.data.menuItemId));
+  res.sendStatus(204);
+});
+
+// ── Restaurant Categories ──────────────────────────────────────────────────
+
+router.get("/admin/restaurants/:restaurantId/categories", requireAdmin, async (req, res): Promise<void> => {
+  const restaurantId = parseInt(req.params.restaurantId);
+  if (isNaN(restaurantId)) { res.status(400).json({ error: "Invalid restaurantId" }); return; }
+  const rows = await db
+    .select()
+    .from(restaurantCategoriesTable)
+    .where(eq(restaurantCategoriesTable.restaurantId, restaurantId))
+    .orderBy(asc(restaurantCategoriesTable.displayOrder), asc(restaurantCategoriesTable.name));
+  res.json(rows);
+});
+
+router.post("/admin/restaurants/:restaurantId/categories", requireAdmin, async (req, res): Promise<void> => {
+  const restaurantId = parseInt(req.params.restaurantId);
+  if (isNaN(restaurantId)) { res.status(400).json({ error: "Invalid restaurantId" }); return; }
+  const { name } = req.body as { name: string };
+  if (!name?.trim()) { res.status(400).json({ error: "Category name is required" }); return; }
+  const existing = await db.select().from(restaurantCategoriesTable)
+    .where(and(eq(restaurantCategoriesTable.restaurantId, restaurantId), eq(restaurantCategoriesTable.name, name.trim())));
+  if (existing.length > 0) { res.status(409).json({ error: "Category already exists" }); return; }
+  const maxOrder = await db.select().from(restaurantCategoriesTable)
+    .where(eq(restaurantCategoriesTable.restaurantId, restaurantId))
+    .orderBy(asc(restaurantCategoriesTable.displayOrder));
+  const [row] = await db.insert(restaurantCategoriesTable).values({
+    restaurantId, name: name.trim(), displayOrder: maxOrder.length,
+  }).returning();
+  res.status(201).json(row);
+});
+
+router.delete("/admin/restaurants/:restaurantId/categories/:categoryId", requireAdmin, async (req, res): Promise<void> => {
+  const restaurantId = parseInt(req.params.restaurantId);
+  const categoryId = parseInt(req.params.categoryId);
+  if (isNaN(restaurantId) || isNaN(categoryId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(restaurantCategoriesTable)
+    .where(and(eq(restaurantCategoriesTable.id, categoryId), eq(restaurantCategoriesTable.restaurantId, restaurantId)));
+  res.sendStatus(204);
+});
+
+// ── Menu Item Options ──────────────────────────────────────────────────────
+
+router.get("/admin/menu-items/:menuItemId/options", requireAdmin, async (req, res): Promise<void> => {
+  const menuItemId = parseInt(req.params.menuItemId);
+  if (isNaN(menuItemId)) { res.status(400).json({ error: "Invalid menuItemId" }); return; }
+  const rows = await db
+    .select()
+    .from(menuItemOptionsTable)
+    .where(eq(menuItemOptionsTable.menuItemId, menuItemId))
+    .orderBy(asc(menuItemOptionsTable.displayOrder));
+  res.json(rows);
+});
+
+router.post("/admin/menu-items/:menuItemId/options", requireAdmin, async (req, res): Promise<void> => {
+  const menuItemId = parseInt(req.params.menuItemId);
+  if (isNaN(menuItemId)) { res.status(400).json({ error: "Invalid menuItemId" }); return; }
+  const { name, price } = req.body as { name: string; price: number };
+  if (!name?.trim()) { res.status(400).json({ error: "Option name is required" }); return; }
+  const existing = await db.select().from(menuItemOptionsTable)
+    .where(eq(menuItemOptionsTable.menuItemId, menuItemId))
+    .orderBy(asc(menuItemOptionsTable.displayOrder));
+  const [row] = await db.insert(menuItemOptionsTable).values({
+    menuItemId, name: name.trim(), price: Number(price) || 0, displayOrder: existing.length,
+  }).returning();
+  res.status(201).json(row);
+});
+
+router.patch("/admin/menu-item-options/:optionId", requireAdmin, async (req, res): Promise<void> => {
+  const optionId = parseInt(req.params.optionId);
+  if (isNaN(optionId)) { res.status(400).json({ error: "Invalid optionId" }); return; }
+  const { name, price } = req.body as { name?: string; price?: number };
+  const updates: Record<string, unknown> = {};
+  if (name !== undefined) updates.name = name.trim();
+  if (price !== undefined) updates.price = Number(price);
+  const [row] = await db.update(menuItemOptionsTable).set(updates).where(eq(menuItemOptionsTable.id, optionId)).returning();
+  if (!row) { res.status(404).json({ error: "Option not found" }); return; }
+  res.json(row);
+});
+
+router.delete("/admin/menu-item-options/:optionId", requireAdmin, async (req, res): Promise<void> => {
+  const optionId = parseInt(req.params.optionId);
+  if (isNaN(optionId)) { res.status(400).json({ error: "Invalid optionId" }); return; }
+  await db.delete(menuItemOptionsTable).where(eq(menuItemOptionsTable.id, optionId));
   res.sendStatus(204);
 });
 
