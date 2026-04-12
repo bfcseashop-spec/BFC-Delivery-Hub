@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+import type { MenuItemOption } from "./menuItemOption";
+
 export interface MenuItem {
   id: number;
   restaurantId: number;
@@ -16,4 +18,5 @@ export interface MenuItem {
   category: string;
   isAvailable: boolean;
   isPopular: boolean;
+  options?: MenuItemOption[];
 }

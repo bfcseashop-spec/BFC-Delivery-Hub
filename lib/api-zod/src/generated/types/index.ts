@@ -21,6 +21,7 @@ export * from "./listRestaurantsParams";
 export * from "./loginBody";
 export * from "./logout200";
 export * from "./menuItem";
+export * from "./menuItemOption";
 export * from "./menuSection";
 export * from "./order";
 export * from "./orderItem";

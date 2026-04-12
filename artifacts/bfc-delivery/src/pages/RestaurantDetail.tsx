@@ -225,10 +225,15 @@ export default function RestaurantDetail() {
                 ) : (
                   <div className="space-y-4">
                     {cartItems.map((item) => (
-                      <div key={item.menuItemId} className="flex justify-between gap-4">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-bold text-sm text-primary">{item.quantity}x</span>
-                          <span className="font-medium text-sm">{item.name}</span>
+                      <div key={item.cartKey} className="flex justify-between gap-4">
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold text-sm text-primary shrink-0">{item.quantity}x</span>
+                          <div>
+                            <span className="font-medium text-sm">{item.name}</span>
+                            {item.optionName && (
+                              <span className="block text-xs text-muted-foreground">{item.optionName}</span>
+                            )}
+                          </div>
                         </div>
                         <span className="font-medium text-sm shrink-0">
                           ${(item.price * item.quantity).toFixed(2)}

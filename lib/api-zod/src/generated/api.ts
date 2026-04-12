@@ -158,6 +158,13 @@ export const GetRestaurantMenuResponseItem = zod.object({
       category: zod.string(),
       isAvailable: zod.boolean(),
       isPopular: zod.boolean(),
+      options: zod.array(zod.object({
+        id: zod.number(),
+        menuItemId: zod.number(),
+        name: zod.string(),
+        price: zod.number(),
+        displayOrder: zod.number(),
+      })).optional(),
     }),
   ),
 });

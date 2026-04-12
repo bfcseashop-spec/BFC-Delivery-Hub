@@ -204,10 +204,15 @@ export default function Checkout() {
 
                 <div className="space-y-4 mb-6">
                   {items.map((item) => (
-                    <div key={item.menuItemId} className="flex justify-between gap-4">
+                    <div key={item.cartKey} className="flex justify-between gap-4">
                       <div className="flex gap-3">
-                        <span className="font-bold text-primary">{item.quantity}x</span>
-                        <span className="font-medium text-zinc-200">{item.name}</span>
+                        <span className="font-bold text-primary shrink-0">{item.quantity}x</span>
+                        <div>
+                          <span className="font-medium text-zinc-200">{item.name}</span>
+                          {item.optionName && (
+                            <span className="block text-xs text-zinc-400">{item.optionName}</span>
+                          )}
+                        </div>
                       </div>
                       <span className="font-medium text-zinc-300 shrink-0">
                         ${(item.price * item.quantity).toFixed(2)}
