@@ -35,7 +35,7 @@ router.get("/partner/:partnerId/stats", async (req, res): Promise<void> => {
 
   const orders = await db.select().from(ordersTable).where(eq(ordersTable.restaurantId, partner.restaurantId));
   const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+  const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const pendingOrders = orders.filter(o => ["pending", "confirmed", "preparing", "out_for_delivery"].includes(o.status)).length;
   const completedOrders = orders.filter(o => o.status === "delivered").length;
@@ -51,7 +51,7 @@ router.get("/partner/:partnerId/stats", async (req, res): Promise<void> => {
   }
   for (const o of orders) {
     const key = new Date(o.createdAt).toISOString().slice(0, 10);
-    if (dailyMap[key]) { dailyMap[key].orders++; dailyMap[key].revenue += o.total; }
+    if (dailyMap[key]) { dailyMap[key].orders++; dailyMap[key].revenue += o.totalAmount; }
   }
   const daily = Object.entries(dailyMap).map(([date, v]) => ({ date, ...v }));
 
@@ -92,7 +92,7 @@ router.get("/partner/:partnerId/invoices", async (req, res): Promise<void> => {
   for (const o of orders) {
     const key = new Date(o.createdAt).toISOString().slice(0, 7);
     if (!monthMap[key]) monthMap[key] = { revenue: 0, orderCount: 0 };
-    monthMap[key].revenue += o.total;
+    monthMap[key].revenue += o.totalAmount;
     monthMap[key].orderCount++;
   }
   const invoices = Object.entries(monthMap)

@@ -24,7 +24,7 @@ export default function PartnerOrderHistory() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: orders = [], isLoading } = useQuery<{ id: number; status: string; total: number; customerName: string; createdAt: string; items: string }[]>({
+  const { data: orders = [], isLoading } = useQuery<{ id: number; status: string; totalAmount: number; customerName: string; createdAt: string; items: string }[]>({
     queryKey: ["partner-orders", partnerId],
     queryFn: async () => { const r = await api(`/partner/${partnerId}/orders`); return r.ok ? r.json() : []; },
   });
@@ -89,7 +89,7 @@ export default function PartnerOrderHistory() {
                           {o.status.replace(/_/g, " ")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-bold">${o.total.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-bold">${(o.totalAmount ?? 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-right text-xs text-muted-foreground hidden sm:table-cell">{new Date(o.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}

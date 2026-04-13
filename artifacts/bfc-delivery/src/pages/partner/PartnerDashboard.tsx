@@ -31,7 +31,7 @@ export default function PartnerDashboard() {
     queryFn: async () => { const r = await api(`/partner/${partnerId}/stats`); return r.ok ? r.json() : null; },
   });
 
-  const { data: orders = [] } = useQuery<{ id: number; status: string; total: number; customerName: string; createdAt: string }[]>({
+  const { data: orders = [] } = useQuery<{ id: number; status: string; totalAmount: number; customerName: string; createdAt: string }[]>({
     queryKey: ["partner-orders", partnerId],
     queryFn: async () => { const r = await api(`/partner/${partnerId}/orders`); return r.ok ? r.json() : []; },
   });
@@ -139,7 +139,7 @@ export default function PartnerDashboard() {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold capitalize ${STATUS_COLORS[o.status] ?? "bg-zinc-100 text-zinc-600"}`}>
                           {o.status.replace(/_/g, " ")}
                         </span>
-                        <span className="font-bold text-sm">${o.total.toFixed(2)}</span>
+                        <span className="font-bold text-sm">${(o.totalAmount ?? 0).toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
