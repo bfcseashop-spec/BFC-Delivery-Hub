@@ -3,7 +3,9 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, ChevronDown, Search, Star, Clock, ShoppingBag, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ChevronRight, ChevronDown, Search, Star, Clock, ShoppingBag, MapPin, SlidersHorizontal } from "lucide-react";
 import {
   useListCategories,
   useListRestaurants,
@@ -111,6 +113,7 @@ export default function Home() {
   const [priceFilter, setPriceFilter] = useState<string | null>(null);
   const [filterVouchers, setFilterVouchers] = useState(false);
   const [filterDeals, setFilterDeals] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const { data: categories, isLoading: isCategoriesLoading } = useListCategories({
     query: { queryKey: getListCategoriesQueryKey() },
@@ -317,22 +320,117 @@ export default function Home() {
       {/* ── Delivery / Pickup / Shops tab bar ─────────────────── */}
       <div className="bg-white border-b border-zinc-200 sticky top-[64px] z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex items-center gap-0">
-            <button className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-primary border-b-2 border-primary">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-5h14v5z"/></svg>
-              Delivery
-            </button>
-            <button className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-zinc-400 hover:text-zinc-700 border-b-2 border-transparent">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
-              Pick-up
-            </button>
-            <button className="flex items-center gap-2 px-5 py-3 text-sm font-semibold text-zinc-400 hover:text-zinc-700 border-b-2 border-transparent">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
-              Shops
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <button className="flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs sm:text-sm font-semibold text-primary border-b-2 border-primary">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current shrink-0"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-5h14v5z"/></svg>
+                Delivery
+              </button>
+              <button className="flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-zinc-700 border-b-2 border-transparent">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current shrink-0"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
+                Pick-up
+              </button>
+              <button className="flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-zinc-700 border-b-2 border-transparent">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current shrink-0"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+                Shops
+              </button>
+            </div>
+            {/* Mobile filter button */}
+            <button
+              onClick={() => setMobileFiltersOpen(true)}
+              className={`md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                isFiltered || priceFilter
+                  ? "bg-primary text-white border-primary"
+                  : "text-zinc-600 border-zinc-200 hover:border-zinc-300"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters{(isFiltered || priceFilter) ? " •" : ""}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Filters Sheet */}
+      <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl p-0 overflow-y-auto">
+          <SheetHeader className="px-5 pt-5 pb-3 border-b sticky top-0 bg-white z-10">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-base font-black">Filters & Sort</SheetTitle>
+              {(isFiltered || priceFilter) && (
+                <button
+                  onClick={() => {
+                    setSelectedCuisines([]); setActiveFilterIds(new Set());
+                    setFilterVegetarian(false); setFilterHalal(false);
+                    setPriceFilter(null); setSortBy("relevance");
+                  }}
+                  className="text-xs font-bold text-primary"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          </SheetHeader>
+          <div className="px-5 py-4 space-y-6">
+            {/* Sort by */}
+            <div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Sort by</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(["relevance","fastest","distance","top-rated"] as const).map(o => (
+                  <button key={o} onClick={() => setSortBy(o)}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition text-left ${sortBy === o ? "bg-primary text-white border-primary" : "text-zinc-700 border-zinc-200"}`}>
+                    {o === "relevance" ? "Relevance" : o === "fastest" ? "Fastest" : o === "distance" ? "Distance" : "Top rated"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Quick filters */}
+            {quickFilters.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Quick Filters</p>
+                <div className="flex flex-wrap gap-2">
+                  {quickFilters.map(f => (
+                    <button key={f.id} onClick={() => toggleQuickFilter(f.id)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${activeFilterIds.has(f.id) ? "bg-primary text-white border-primary" : "bg-zinc-50 text-zinc-700 border-zinc-200"}`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Cuisines */}
+            <div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Cuisines</p>
+              <div className="grid grid-cols-2 gap-y-1">
+                {categories?.map(cat => (
+                  <Checkbox key={cat.id} checked={selectedCuisines.includes(cat.id)} onChange={() => toggleCuisine(cat.id)} label={cat.name} />
+                ))}
+              </div>
+            </div>
+            {/* Dietary */}
+            <div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Dietary</p>
+              <div className="flex gap-2">
+                {[{ key:"veg",label:"Vegetarian",active:filterVegetarian,fn:()=>setFilterVegetarian(!filterVegetarian)},{key:"halal",label:"Halal",active:filterHalal,fn:()=>setFilterHalal(!filterHalal)}].map(b=>(
+                  <button key={b.key} onClick={b.fn} className={`px-4 py-2 rounded-full text-xs font-bold border transition ${b.active ? "bg-green-500 text-white border-green-500" : "bg-zinc-50 text-zinc-700 border-zinc-200"}`}>{b.label}</button>
+                ))}
+              </div>
+            </div>
+            {/* Price */}
+            <div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Price</p>
+              <div className="flex gap-2">
+                {["$","$$","$$$"].map(p=>(
+                  <button key={p} onClick={()=>setPriceFilter(priceFilter===p?null:p)} className={`flex-1 py-2 rounded-xl text-sm font-bold border transition ${priceFilter===p?"bg-primary text-white border-primary":"bg-zinc-50 text-zinc-700 border-zinc-200"}`}>{p}</button>
+                ))}
+              </div>
+            </div>
+            <Button className="w-full font-bold h-12" onClick={() => setMobileFiltersOpen(false)}>
+              Show {allListRestaurants.length} restaurant{allListRestaurants.length !== 1 ? "s" : ""}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -628,7 +726,7 @@ export default function Home() {
                 </div>
 
                 {isRestaurantsLoading ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <div key={i} className="flex flex-col gap-3">
                         <Skeleton className="aspect-[4/3] rounded-2xl w-full" />
@@ -657,7 +755,7 @@ export default function Home() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allListRestaurants.map((r) => (
                       <RestaurantCard key={r.id} restaurant={r} />
                     ))}
