@@ -61,8 +61,8 @@ export default function AdminCustomers() {
             onClick={() => setRoleFilter(r)}
             className={`rounded-xl border p-4 text-left transition-all ${roleFilter === r ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"}`}
           >
-            <p className="text-2xl font-black">{counts[r as keyof typeof counts]}</p>
-            <p className="text-sm font-medium text-muted-foreground capitalize">{r === "all" ? "Total Users" : r === "customer" ? "Customers" : "Admins"}</p>
+            <p className="text-3xl font-black">{counts[r as keyof typeof counts]}</p>
+            <p className="text-base font-medium text-muted-foreground capitalize">{r === "all" ? "Total Users" : r === "customer" ? "Customers" : "Admins"}</p>
           </button>
         ))}
       </div>
@@ -92,36 +92,36 @@ export default function AdminCustomers() {
             </div>
           ) : (
             <div className="overflow-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-base">
                 <thead className="border-b bg-zinc-50 dark:bg-zinc-900/50">
                   <tr>
-                    <th className="h-11 px-4 text-left font-bold text-muted-foreground">User</th>
-                    <th className="h-11 px-4 text-left font-bold text-muted-foreground hidden md:table-cell">Email</th>
-                    <th className="h-11 px-4 text-center font-bold text-muted-foreground">Role</th>
-                    <th className="h-11 px-4 text-right font-bold text-muted-foreground hidden sm:table-cell">Joined</th>
+                    <th className="h-13 px-4 text-left font-bold text-muted-foreground">User</th>
+                    <th className="h-13 px-4 text-left font-bold text-muted-foreground hidden md:table-cell">Email</th>
+                    <th className="h-13 px-4 text-center font-bold text-muted-foreground">Role</th>
+                    <th className="h-13 px-4 text-right font-bold text-muted-foreground hidden sm:table-cell">Joined</th>
                   </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
                   {filtered.map(c => (
                     <tr key={c.id} className="border-b hover:bg-muted/40 transition-colors">
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-4 py-4 align-middle">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                            {c.role === "admin" ? <ShieldCheck className="w-4 h-4 text-purple-600" /> : <User className="w-4 h-4 text-blue-500" />}
+                          <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                            {c.role === "admin" ? <ShieldCheck className="w-5 h-5 text-purple-600" /> : <User className="w-5 h-5 text-blue-500" />}
                           </div>
                           <div>
                             <p className="font-bold leading-tight">{c.name}</p>
-                            <p className="text-xs text-muted-foreground md:hidden">{c.email}</p>
+                            <p className="text-sm text-muted-foreground md:hidden">{c.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle hidden md:table-cell text-muted-foreground">{c.email}</td>
-                      <td className="px-4 py-3 align-middle text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${ROLE_STYLES[c.role] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
+                      <td className="px-4 py-4 align-middle hidden md:table-cell text-muted-foreground">{c.email}</td>
+                      <td className="px-4 py-4 align-middle text-center">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border capitalize ${ROLE_STYLES[c.role] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
                           {c.role}
                         </span>
                       </td>
-                      <td className="px-4 py-3 align-middle text-right text-xs text-muted-foreground hidden sm:table-cell">
+                      <td className="px-4 py-4 align-middle text-right text-sm text-muted-foreground hidden sm:table-cell">
                         {new Date(c.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                       </td>
                     </tr>

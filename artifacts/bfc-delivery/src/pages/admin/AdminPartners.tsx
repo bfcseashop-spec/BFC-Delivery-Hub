@@ -336,8 +336,8 @@ export default function AdminPartners() {
             onClick={() => setStatusFilter(s)}
             className={`rounded-xl border p-4 text-left transition-all ${statusFilter === s ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"}`}
           >
-            <p className="text-2xl font-black text-foreground">{counts[s]}</p>
-            <p className="text-sm font-medium text-muted-foreground capitalize">{s === "all" ? "Total Partners" : s}</p>
+            <p className="text-3xl font-black text-foreground">{counts[s]}</p>
+            <p className="text-base font-medium text-muted-foreground capitalize">{s === "all" ? "Total Partners" : s}</p>
           </button>
         ))}
       </div>
@@ -371,52 +371,52 @@ export default function AdminPartners() {
             </div>
           ) : (
             <div className="overflow-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-base">
                 <thead className="border-b bg-zinc-50 dark:bg-zinc-900/50">
                   <tr>
-                    <th className="h-11 px-4 text-left font-bold text-muted-foreground">Partner</th>
-                    <th className="h-11 px-4 text-left font-bold text-muted-foreground hidden md:table-cell">Contact</th>
-                    <th className="h-11 px-4 text-left font-bold text-muted-foreground hidden lg:table-cell">Restaurant</th>
-                    <th className="h-11 px-4 text-center font-bold text-muted-foreground">Status</th>
-                    <th className="h-11 px-4 text-center font-bold text-muted-foreground hidden sm:table-cell">Contract</th>
-                    <th className="h-11 px-4 text-center font-bold text-muted-foreground hidden sm:table-cell">Commission</th>
-                    <th className="h-11 px-4 text-right font-bold text-muted-foreground">Actions</th>
+                    <th className="h-13 px-4 text-left font-bold text-muted-foreground">Partner</th>
+                    <th className="h-13 px-4 text-left font-bold text-muted-foreground hidden md:table-cell">Contact</th>
+                    <th className="h-13 px-4 text-left font-bold text-muted-foreground hidden lg:table-cell">Restaurant</th>
+                    <th className="h-13 px-4 text-center font-bold text-muted-foreground">Status</th>
+                    <th className="h-13 px-4 text-center font-bold text-muted-foreground hidden sm:table-cell">Contract</th>
+                    <th className="h-13 px-4 text-center font-bold text-muted-foreground hidden sm:table-cell">Commission</th>
+                    <th className="h-13 px-4 text-right font-bold text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
                   {filtered.map(p => (
                     <tr key={p.id} className="border-b hover:bg-muted/40 transition-colors">
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-4 py-4 align-middle">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <Building2 className="w-4 h-4 text-primary" />
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Building2 className="w-5 h-5 text-primary" />
                           </div>
                           <div>
                             <p className="font-bold leading-tight">{p.businessName}</p>
-                            <p className="text-xs text-muted-foreground">{p.name}</p>
+                            <p className="text-sm text-muted-foreground">{p.name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle hidden md:table-cell">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Mail className="w-3 h-3 shrink-0" />
+                      <td className="px-4 py-4 align-middle hidden md:table-cell">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <Mail className="w-3.5 h-3.5 shrink-0" />
                           <span className="truncate max-w-[160px]">{p.email}</span>
                         </div>
                         {p.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                            <Phone className="w-3 h-3 shrink-0" />
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-0.5">
+                            <Phone className="w-3.5 h-3.5 shrink-0" />
                             <span>{p.phone}</span>
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 align-middle hidden lg:table-cell">
+                      <td className="px-4 py-4 align-middle hidden lg:table-cell">
                         {getRestaurantName(p.restaurantId) ? (
-                          <div className="flex items-center gap-1.5 text-xs font-medium">
-                            <Store className="w-3.5 h-3.5 text-primary" />
+                          <div className="flex items-center gap-1.5 text-sm font-medium">
+                            <Store className="w-4 h-4 text-primary" />
                             {getRestaurantName(p.restaurantId)}
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">Not linked</span>
+                          <span className="text-sm text-muted-foreground italic">Not linked</span>
                         )}
                       </td>
                       <td className="px-4 py-3 align-middle text-center">

@@ -49,7 +49,7 @@ export default function AdminDashboard() {
         {/* Recent Orders */}
         <Card className="shadow-sm border-zinc-200 dark:border-zinc-800">
           <CardHeader>
-            <CardTitle className="font-display font-bold">Recent Orders</CardTitle>
+            <CardTitle className="font-display font-bold text-xl">Recent Orders</CardTitle>
           </CardHeader>
           <CardContent>
             {isOrdersLoading ? (
@@ -62,14 +62,14 @@ export default function AdminDashboard() {
               <div className="text-center py-8 text-muted-foreground">No recent orders found.</div>
             ) : (
               <div className="relative w-full overflow-auto">
-                <table className="w-full caption-bottom text-sm">
+                <table className="w-full caption-bottom text-base">
                   <thead className="[&_tr]:border-b">
                     <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                      <th className="h-12 px-4 text-left align-middle font-bold text-muted-foreground">Order ID</th>
-                      <th className="h-12 px-4 text-left align-middle font-bold text-muted-foreground">Customer</th>
-                      <th className="h-12 px-4 text-left align-middle font-bold text-muted-foreground">Restaurant</th>
-                      <th className="h-12 px-4 text-right align-middle font-bold text-muted-foreground">Amount</th>
-                      <th className="h-12 px-4 text-right align-middle font-bold text-muted-foreground">Status</th>
+                      <th className="h-13 px-4 text-left align-middle font-bold text-muted-foreground">Order ID</th>
+                      <th className="h-13 px-4 text-left align-middle font-bold text-muted-foreground">Customer</th>
+                      <th className="h-13 px-4 text-left align-middle font-bold text-muted-foreground">Restaurant</th>
+                      <th className="h-13 px-4 text-right align-middle font-bold text-muted-foreground">Amount</th>
+                      <th className="h-13 px-4 text-right align-middle font-bold text-muted-foreground">Status</th>
                     </tr>
                   </thead>
                   <tbody className="[&_tr:last-child]:border-0">
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
                         <td className="p-4 align-middle">{order.restaurantName}</td>
                         <td className="p-4 align-middle text-right font-bold">${order.totalAmount.toFixed(2)}</td>
                         <td className="p-4 align-middle text-right">
-                          <Badge variant={order.status === "pending" ? "secondary" : order.status === "delivered" ? "default" : "outline"} className="uppercase">
+                          <Badge variant={order.status === "pending" ? "secondary" : order.status === "delivered" ? "default" : "outline"} className="uppercase text-sm">
                             {order.status.replace("_", " ")}
                           </Badge>
                         </td>
@@ -102,11 +102,11 @@ function StatCard({ title, value, icon, isLoading }: { title: string, value: str
     <Card className="shadow-sm border-zinc-200 dark:border-zinc-800">
       <CardContent className="p-6 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+          <p className="text-base font-medium text-muted-foreground mb-1">{title}</p>
           {isLoading ? (
-            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-9 w-24" />
           ) : (
-            <h3 className="text-2xl font-black font-display tracking-tight">{value}</h3>
+            <h3 className="text-3xl font-black font-display tracking-tight">{value}</h3>
           )}
         </div>
         <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">

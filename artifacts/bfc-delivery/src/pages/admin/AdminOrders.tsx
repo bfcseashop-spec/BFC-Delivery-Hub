@@ -40,7 +40,7 @@ export default function AdminOrders() {
       <Card className="shadow-sm border-zinc-200 dark:border-zinc-800">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 rounded-t-lg">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Filter by Status:</span>
+            <span className="text-base font-bold text-muted-foreground uppercase tracking-wider">Filter by Status:</span>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px] bg-white dark:bg-zinc-950">
                 <SelectValue placeholder="All Orders" />
@@ -69,15 +69,15 @@ export default function AdminOrders() {
             </div>
           ) : (
             <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
+              <table className="w-full caption-bottom text-base">
                 <thead className="[&_tr]:border-b bg-zinc-50 dark:bg-zinc-900/50">
                   <tr className="border-b transition-colors hover:bg-muted/50">
-                    <th className="h-12 px-6 text-left align-middle font-bold text-muted-foreground">Order ID</th>
-                    <th className="h-12 px-6 text-left align-middle font-bold text-muted-foreground">Date</th>
-                    <th className="h-12 px-6 text-left align-middle font-bold text-muted-foreground">Customer</th>
-                    <th className="h-12 px-6 text-left align-middle font-bold text-muted-foreground">Restaurant</th>
-                    <th className="h-12 px-6 text-right align-middle font-bold text-muted-foreground">Amount</th>
-                    <th className="h-12 px-6 text-center align-middle font-bold text-muted-foreground">Status Action</th>
+                    <th className="h-13 px-6 text-left align-middle font-bold text-muted-foreground">Order ID</th>
+                    <th className="h-13 px-6 text-left align-middle font-bold text-muted-foreground">Date</th>
+                    <th className="h-13 px-6 text-left align-middle font-bold text-muted-foreground">Customer</th>
+                    <th className="h-13 px-6 text-left align-middle font-bold text-muted-foreground">Restaurant</th>
+                    <th className="h-13 px-6 text-right align-middle font-bold text-muted-foreground">Amount</th>
+                    <th className="h-13 px-6 text-center align-middle font-bold text-muted-foreground">Status Action</th>
                   </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
@@ -89,7 +89,7 @@ export default function AdminOrders() {
                       </td>
                       <td className="p-6 align-middle">
                         <p className="font-medium">{order.customerName}</p>
-                        <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                        <p className="text-sm text-muted-foreground">{order.customerPhone}</p>
                       </td>
                       <td className="p-6 align-middle font-medium">{order.restaurantName}</td>
                       <td className="p-6 align-middle text-right font-bold text-primary">${order.totalAmount.toFixed(2)}</td>
@@ -98,7 +98,7 @@ export default function AdminOrders() {
                           value={order.status} 
                           onValueChange={(val) => handleStatusChange(order.id, val)}
                         >
-                          <SelectTrigger className={`w-[160px] mx-auto h-9 text-xs font-bold uppercase tracking-wider ${
+                          <SelectTrigger className={`w-[160px] mx-auto h-9 text-sm font-bold uppercase tracking-wider ${
                             order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-900' :
                             order.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-900' :
                             ''

@@ -368,15 +368,15 @@ export default function AdminRestaurants() {
             </div>
           ) : (
             <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
+              <table className="w-full caption-bottom text-base">
                 <thead className="[&_tr]:border-b bg-zinc-50 dark:bg-zinc-900/50">
                   <tr className="border-b">
-                    <th className="h-12 px-4 text-left align-middle font-bold text-muted-foreground w-16">Image</th>
-                    <th className="h-12 px-4 text-left align-middle font-bold text-muted-foreground">Name</th>
-                    <th className="h-12 px-4 text-left align-middle font-bold text-muted-foreground hidden md:table-cell">Category</th>
-                    <th className="h-12 px-4 text-center align-middle font-bold text-muted-foreground">Status</th>
-                    <th className="h-12 px-4 text-right align-middle font-bold text-muted-foreground">Actions</th>
-                    <th className="h-12 px-4 text-right align-middle font-bold text-muted-foreground">Menu</th>
+                    <th className="h-13 px-4 text-left align-middle font-bold text-muted-foreground w-16">Image</th>
+                    <th className="h-13 px-4 text-left align-middle font-bold text-muted-foreground">Name</th>
+                    <th className="h-13 px-4 text-left align-middle font-bold text-muted-foreground hidden md:table-cell">Category</th>
+                    <th className="h-13 px-4 text-center align-middle font-bold text-muted-foreground">Status</th>
+                    <th className="h-13 px-4 text-right align-middle font-bold text-muted-foreground">Actions</th>
+                    <th className="h-13 px-4 text-right align-middle font-bold text-muted-foreground">Menu</th>
                   </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
@@ -394,9 +394,9 @@ export default function AdminRestaurants() {
                         </div>
                       </td>
                       <td className="p-4 align-middle">
-                        <p className="font-bold text-base leading-tight">{r.name}</p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[220px]">{r.address}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{r.deliveryTime} · Min ${r.minimumOrder}</p>
+                        <p className="font-bold text-lg leading-tight">{r.name}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-[220px]">{r.address}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{r.deliveryTime} · Min ${r.minimumOrder}</p>
                       </td>
                       <td className="p-4 align-middle font-medium hidden md:table-cell">
                         <Badge variant="secondary" className="text-xs">{r.categoryName}</Badge>

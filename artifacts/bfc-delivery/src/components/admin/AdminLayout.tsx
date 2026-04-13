@@ -63,7 +63,7 @@ function SidebarNav({ user, logout, onNavigate }: { user: { name: string; email:
       <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-6">
         {NAV_SECTIONS.map(section => (
           <div key={section.title}>
-            <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+            <p className="px-3 mb-1.5 text-xs font-bold uppercase tracking-widest text-zinc-500">
               {section.title}
             </p>
             <div className="space-y-0.5">
@@ -72,7 +72,7 @@ function SidebarNav({ user, logout, onNavigate }: { user: { name: string; email:
                 return (
                   <Link key={item.href} href={item.href} onClick={onNavigate}>
                     <button
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition-all group ${
                         active
                           ? "bg-primary text-white shadow-sm"
                           : "text-zinc-400 hover:text-white hover:bg-zinc-800"
@@ -98,8 +98,8 @@ function SidebarNav({ user, logout, onNavigate }: { user: { name: string; email:
             <span className="text-xs font-bold text-primary">{user.name.charAt(0).toUpperCase()}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-white truncate">{user.name}</p>
-            <p className="text-xs text-zinc-400 truncate">{user.email}</p>
+            <p className="text-base font-bold text-white truncate">{user.name}</p>
+            <p className="text-sm text-zinc-400 truncate">{user.email}</p>
           </div>
         </div>
         <Button variant="destructive" size="sm" className="w-full justify-start" onClick={() => logout()}>
@@ -150,7 +150,7 @@ export function AdminLayout({ children, title }: { children: React.ReactNode; ti
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="font-display font-bold text-lg lg:text-xl truncate">{title}</h1>
+          <h1 className="font-display font-bold text-xl lg:text-2xl truncate">{title}</h1>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           {children}
