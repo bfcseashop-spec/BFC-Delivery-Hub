@@ -251,46 +251,42 @@ export default function Home() {
 
       {/* ── HERO ───────────────────────────────────────────────── */}
       <div
-        className="relative overflow-hidden flex flex-col"
-        style={{
-          background: "linear-gradient(135deg, #E8472A 0%, #c73219 50%, #9b1c08 100%)",
-          minHeight: "calc(100vh - 100px)",
-        }}
+        className="relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #E8472A 0%, #c73219 50%, #9b1c08 100%)" }}
       >
         {/* decorative blobs */}
-        <div className="absolute -top-16 -right-16 w-96 h-96 rounded-full opacity-10 bg-white" />
-        <div className="absolute -bottom-20 -left-10 w-[500px] h-[500px] rounded-full opacity-10 bg-white" />
-        <div className="absolute top-8 right-1/3 w-48 h-48 rounded-full opacity-[0.07] bg-white" />
-        <div className="absolute bottom-32 right-16 w-40 h-40 rounded-full opacity-[0.05] bg-white" />
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10 bg-white" />
+        <div className="absolute -bottom-20 -left-10 w-80 h-80 rounded-full opacity-10 bg-white" />
+        <div className="absolute top-8 right-1/3 w-32 h-32 rounded-full opacity-[0.07] bg-white" />
 
-        <div className="relative flex-1 flex flex-col justify-center max-w-5xl mx-auto px-4 py-12 text-center w-full">
-          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white/90 text-sm font-semibold px-4 py-1.5 rounded-full mb-6 border border-white/20">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <div className="relative max-w-5xl mx-auto px-4 py-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white/90 text-xs font-semibold px-3 py-1 rounded-full mb-3 border border-white/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             Phnom Penh · 24 Hours Open · Free Delivery
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-tight mb-4 drop-shadow-sm">
-            Delicious food,<br />
+          <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-2 drop-shadow-sm">
+            Delicious food,{" "}
             <span className="text-yellow-300">delivered fast</span>
           </h1>
-          <p className="text-white/75 text-lg mb-10 max-w-md mx-auto leading-relaxed">
-            Order from the best restaurants in Cambodia.<br />Always free delivery, open 24 / 7.
+          <p className="text-white/70 text-sm mb-5 max-w-sm mx-auto">
+            Order from the best restaurants in Cambodia. Always free delivery.
           </p>
 
           {/* Search bar */}
-          <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto mb-10">
-            <div className="flex items-center bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-white/80">
-              <Search className="w-5 h-5 text-zinc-400 ml-5 shrink-0" />
+          <form onSubmit={handleSearch} className="relative max-w-lg mx-auto mb-5">
+            <div className="flex items-center bg-white rounded-xl shadow-xl overflow-hidden border-2 border-white">
+              <Search className="w-4 h-4 text-zinc-400 ml-4 shrink-0" />
               <input
                 type="text"
                 placeholder="Search restaurants, cuisines, or dishes…"
-                className="flex-1 px-4 py-4 text-base outline-none text-zinc-700 placeholder:text-zinc-400"
+                className="flex-1 px-3 py-3 text-sm outline-none text-zinc-700 placeholder:text-zinc-400"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
               <button
                 type="submit"
-                className="bg-primary text-white font-bold text-base px-8 h-full py-4 hover:bg-primary/90 transition shrink-0"
+                className="bg-primary text-white font-bold text-sm px-5 h-full py-3 hover:bg-primary/90 transition shrink-0"
               >
                 Search
               </button>
@@ -298,13 +294,13 @@ export default function Home() {
           </form>
 
           {/* Stat pills */}
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             {[
-              { icon: <ShoppingBag className="w-4 h-4" />, text: "500+ Restaurants" },
-              { icon: <MapPin className="w-4 h-4" />, text: "Free Delivery" },
-              { icon: <Clock className="w-4 h-4" />, text: "Open 24 / 7" },
+              { icon: <ShoppingBag className="w-3.5 h-3.5" />, text: "500+ Restaurants" },
+              { icon: <MapPin className="w-3.5 h-3.5" />, text: "Free Delivery" },
+              { icon: <Clock className="w-3.5 h-3.5" />, text: "Open 24 / 7" },
             ].map((s) => (
-              <div key={s.text} className="flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white text-sm font-semibold px-5 py-2.5 rounded-full border border-white/25">
+              <div key={s.text} className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/20">
                 {s.icon}
                 {s.text}
               </div>
