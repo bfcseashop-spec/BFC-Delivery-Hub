@@ -18,9 +18,16 @@ localPort = 22214
 run = "pnpm --filter @workspace/bfc-delivery run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/bfc-delivery", "run", "build" ]
 publicDir = "artifacts/bfc-delivery/dist/public"
 serve = "static"
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/bfc-delivery", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+PORT = "22214"
+BASE_PATH = "/"
 
 [[services.production.rewrites]]
 from = "/*"
