@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit2, Trash2, Loader2, Search, Handshake, Phone, Mail, Building2, Store } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Search, Handshake, Phone, Mail, Building2, Store, LogIn } from "lucide-react";
 import { useState, useCallback } from "react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useListRestaurants } from "@workspace/api-client-react";
 
@@ -259,6 +260,7 @@ export default function AdminPartners() {
   });
 
   const { data: restaurants = [] } = useListRestaurants({});
+  const [, setLocation] = useLocation();
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => api(`/admin/partners/${id}`, { method: "DELETE" }),
@@ -390,6 +392,14 @@ export default function AdminPartners() {
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost" size="sm"
+                            className="h-8 gap-1.5 text-xs font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                            onClick={() => setLocation(`/partner/${p.id}`)}
+                            title="Open partner portal"
+                          >
+                            <LogIn className="w-3.5 h-3.5" /> Log In
+                          </Button>
                           <Button
                             variant="ghost" size="icon"
                             className="h-8 w-8 text-blue-600 hover:bg-blue-50"

@@ -25,6 +25,19 @@ import AdminLandingPage from "@/pages/admin/AdminLandingPage";
 import AdminPartners from "@/pages/admin/AdminPartners";
 import AdminCustomers from "@/pages/admin/AdminCustomers";
 
+import PartnerDashboard from "@/pages/partner/PartnerDashboard";
+import PartnerOrderHistory from "@/pages/partner/PartnerOrderHistory";
+import PartnerReviews from "@/pages/partner/PartnerReviews";
+import PartnerPerformance from "@/pages/partner/PartnerPerformance";
+import PartnerInvoices from "@/pages/partner/PartnerInvoices";
+import PartnerTopProgram from "@/pages/partner/PartnerTopProgram";
+import PartnerAdvertising from "@/pages/partner/PartnerAdvertising";
+import PartnerPromotions from "@/pages/partner/PartnerPromotions";
+import PartnerPayments from "@/pages/partner/PartnerPayments";
+import PartnerMenu from "@/pages/partner/PartnerMenu";
+import PartnerOpeningTimes from "@/pages/partner/PartnerOpeningTimes";
+import PartnerSettings from "@/pages/partner/PartnerSettings";
+
 const queryClient = new QueryClient();
 
 function Router() {
@@ -48,6 +61,20 @@ function Router() {
       <Route path="/admin/landing-page" component={AdminLandingPage} />
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/customers" component={AdminCustomers} />
+
+      {/* Partner Portal */}
+      <Route path="/partner/:partnerId/top-program" component={PartnerTopProgram} />
+      <Route path="/partner/:partnerId/orders" component={PartnerOrderHistory} />
+      <Route path="/partner/:partnerId/reviews" component={PartnerReviews} />
+      <Route path="/partner/:partnerId/performance" component={PartnerPerformance} />
+      <Route path="/partner/:partnerId/invoices" component={PartnerInvoices} />
+      <Route path="/partner/:partnerId/advertising" component={PartnerAdvertising} />
+      <Route path="/partner/:partnerId/promotions" component={PartnerPromotions} />
+      <Route path="/partner/:partnerId/payments" component={PartnerPayments} />
+      <Route path="/partner/:partnerId/menu" component={PartnerMenu} />
+      <Route path="/partner/:partnerId/opening-times" component={PartnerOpeningTimes} />
+      <Route path="/partner/:partnerId/settings" component={PartnerSettings} />
+      <Route path="/partner/:partnerId" component={PartnerDashboard} />
 
       <Route component={NotFound} />
     </Switch>

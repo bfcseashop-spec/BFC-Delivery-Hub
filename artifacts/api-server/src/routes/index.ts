@@ -8,6 +8,7 @@ import ordersRouter from "./orders";
 import adminRouter from "./admin";
 import landingRouter from "./landing";
 import uploadRouter from "./upload";
+import partnerRouter from "./partner";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(ordersRouter);
 router.use(adminRouter);
 router.use(landingRouter);
 router.use(uploadRouter);
+router.use(partnerRouter);
 
 export default router;
