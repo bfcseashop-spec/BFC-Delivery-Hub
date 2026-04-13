@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useParams } from "wouter";
+import { Link } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { MenuItemCard } from "@/components/MenuItemCard";
@@ -6,21 +9,90 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Star, Clock, MapPin, Info, ArrowLeft, ShoppingBag } from "lucide-react";
-import { Link } from "wouter";
+import { Star, Clock, MapPin, Info, ArrowLeft, ShoppingBag, MessageSquare } from "lucide-react";
 import { useCart } from "@/lib/CartContext";
+import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   useGetRestaurant,
   useGetRestaurantMenu,
   getGetRestaurantQueryKey,
   getGetRestaurantMenuQueryKey
 } from "@workspace/api-client-react";
-
 import fallbackImage from "@/assets/images/restaurant-fallback.png";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+function api(path: string, init?: RequestInit) {
+  return fetch(`${BASE}/api${path}`, { credentials: "include", ...init });
+}
+
+interface Review { id: number; customerName: string; rating: number; comment: string; createdAt: string; }
+
+function StarRow({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
+  return (
+    <div className="flex gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} className={`${cls} ${i <= rating ? "fill-amber-400 text-amber-400" : "text-zinc-200 fill-zinc-200"}`} />
+      ))}
+    </div>
+  );
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex gap-1">
+      {[1,2,3,4,5].map(i => (
+        <button key={i} type="button" onClick={() => onChange(i)} className="p-0.5">
+          <Star className={`w-6 h-6 transition-colors ${i <= value ? "fill-amber-400 text-amber-400" : "text-zinc-300 fill-zinc-100 hover:text-amber-300"}`} />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function RestaurantDetail() {
   const params = useParams();
   const restaurantId = parseInt(params.id || "0");
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const reviewsKey = ["restaurant-reviews", restaurantId];
+  const { data: reviews = [] } = useQuery<Review[]>({
+    queryKey: reviewsKey,
+    queryFn: async () => {
+      const r = await api(`/restaurants/${restaurantId}/reviews`);
+      return r.ok ? r.json() : [];
+    },
+    enabled: !!restaurantId,
+  });
+
+  async function submitReview() {
+    if (!reviewRating) return;
+    setSubmittingReview(true);
+    try {
+      const r = await api(`/restaurants/${restaurantId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewComment }),
+      });
+      if (!r.ok) throw new Error("Failed to submit review");
+      await qc.invalidateQueries({ queryKey: reviewsKey });
+      await qc.invalidateQueries({ queryKey: getGetRestaurantQueryKey(restaurantId) });
+      setReviewRating(0);
+      setReviewComment("");
+      toast({ title: "Review submitted!" });
+    } catch {
+      toast({ title: "Could not submit review", variant: "destructive" });
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
   
   const { items: cartItems, totalPrice, restaurantId: cartRestaurantId } = useCart();
   const isDifferentRestaurant = cartRestaurantId !== null && cartRestaurantId !== restaurantId;
@@ -189,6 +261,74 @@ export default function RestaurantDetail() {
                 </div>
               ))
             )}
+
+            {/* Reviews Section */}
+            <div className="pt-4">
+              <h2 className="font-display font-bold text-2xl mb-6 tracking-tight flex items-center gap-4">
+                <MessageSquare className="w-6 h-6 text-primary" />
+                Customer Reviews
+                <div className="h-px bg-border flex-1" />
+              </h2>
+
+              {/* Write a review (logged-in users only) */}
+              {user ? (
+                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5 mb-6">
+                  <h3 className="font-semibold mb-3 text-sm">Leave a Review</h3>
+                  <div className="mb-3">
+                    <StarPicker value={reviewRating} onChange={setReviewRating} />
+                  </div>
+                  <textarea
+                    value={reviewComment}
+                    onChange={e => setReviewComment(e.target.value)}
+                    placeholder="Share your experience (optional)…"
+                    rows={3}
+                    className="w-full text-sm rounded-xl border border-zinc-200 px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none mb-3"
+                  />
+                  <Button
+                    onClick={submitReview}
+                    disabled={!reviewRating || submittingReview}
+                    className="font-bold"
+                    size="sm"
+                  >
+                    {submittingReview ? "Submitting…" : "Submit Review"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 mb-6 text-sm text-zinc-500 flex items-center gap-3">
+                  <Star className="w-4 h-4 text-amber-400" />
+                  <span><Link href="/login" className="font-semibold text-primary underline">Sign in</Link> to leave a review</span>
+                </div>
+              )}
+
+              {reviews.length === 0 ? (
+                <div className="text-center py-10 text-zinc-400">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No reviews yet. Be the first to review!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map(r => (
+                    <div key={r.id} className="bg-white border border-zinc-100 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-xs font-bold text-primary">{r.customerName.charAt(0).toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">{r.customerName}</p>
+                            <StarRow rating={r.rating} size="sm" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground shrink-0">
+                          {new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
+                      </div>
+                      {r.comment && <p className="text-sm text-muted-foreground pl-12">{r.comment}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sticky Cart Sidebar */}

@@ -10,3 +10,4 @@ export * from "./hero_banners";
 export * from "./restaurant_categories";
 export * from "./menu_item_options";
 export * from "./partners";
+export * from "./reviews";

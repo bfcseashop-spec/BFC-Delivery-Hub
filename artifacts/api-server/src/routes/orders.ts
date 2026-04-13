@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, ordersTable, menuItemsTable, restaurantsTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, type SQL } from "drizzle-orm";
 import {
   ListOrdersResponse,
   CreateOrderBody,
@@ -10,8 +10,20 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/orders", async (_req, res): Promise<void> => {
-  const orders = await db.select().from(ordersTable).orderBy(ordersTable.createdAt);
+router.get("/orders", async (req, res): Promise<void> => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  const conditions: SQL[] = [eq(ordersTable.userId, req.session.userId)];
+
+  const orders = await db
+    .select()
+    .from(ordersTable)
+    .where(and(...conditions))
+    .orderBy(ordersTable.createdAt);
+
   const mapped = orders.map((o) => ({
     ...o,
     createdAt: o.createdAt.toISOString(),
@@ -72,6 +84,7 @@ router.post("/orders", async (req, res): Promise<void> => {
   const [order] = await db
     .insert(ordersTable)
     .values({
+      userId: req.session.userId,
       restaurantId,
       restaurantName: restaurant.name,
       items: orderItems,
@@ -91,6 +104,11 @@ router.post("/orders", async (req, res): Promise<void> => {
 });
 
 router.get("/orders/:orderId", async (req, res): Promise<void> => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
   const params = GetOrderParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -104,6 +122,11 @@ router.get("/orders/:orderId", async (req, res): Promise<void> => {
 
   if (!order) {
     res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  if (req.session.userRole !== "admin" && order.userId !== req.session.userId) {
+    res.status(403).json({ error: "Access denied" });
     return;
   }
 

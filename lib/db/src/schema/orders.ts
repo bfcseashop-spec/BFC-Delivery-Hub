@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id"),
   restaurantId: integer("restaurant_id").notNull(),
   restaurantName: text("restaurant_name").notNull(),
   items: jsonb("items").notNull().$type<Array<{menuItemId: number; name: string; price: number; quantity: number}>>(),
