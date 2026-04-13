@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable, restaurantCategoriesTable, menuItemOptionsTable } from "@workspace/db";
+import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable, restaurantCategoriesTable, menuItemOptionsTable, partnersTable } from "@workspace/db";
 import { eq, and, asc, type SQL } from "drizzle-orm";
 import {
   AdminListOrdersResponse,
@@ -450,6 +450,72 @@ router.delete("/admin/landing/filters/:id", async (req, res): Promise<void> => {
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   await db.delete(quickFiltersTable).where(eq(quickFiltersTable.id, id));
   res.sendStatus(204);
+});
+
+// ---- Partners ----
+
+router.get("/admin/partners", async (_req, res): Promise<void> => {
+  const partners = await db.select().from(partnersTable).orderBy(asc(partnersTable.createdAt));
+  res.json(partners);
+});
+
+router.post("/admin/partners", async (req, res): Promise<void> => {
+  const { name, email, phone, businessName, restaurantId, status, contractType, commissionRate, notes } = req.body;
+  if (!name || !email || !businessName) {
+    res.status(400).json({ error: "name, email, businessName are required" });
+    return;
+  }
+  const [partner] = await db.insert(partnersTable).values({
+    name,
+    email,
+    phone: phone ?? "",
+    businessName,
+    restaurantId: restaurantId ?? null,
+    status: status ?? "pending",
+    contractType: contractType ?? "standard",
+    commissionRate: commissionRate ?? 15,
+    notes: notes ?? "",
+  }).returning();
+  res.status(201).json(partner);
+});
+
+router.patch("/admin/partners/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { name, email, phone, businessName, restaurantId, status, contractType, commissionRate, notes } = req.body;
+  const updates: Record<string, unknown> = {};
+  if (name != null) updates.name = name;
+  if (email != null) updates.email = email;
+  if (phone != null) updates.phone = phone;
+  if (businessName != null) updates.businessName = businessName;
+  if (restaurantId !== undefined) updates.restaurantId = restaurantId;
+  if (status != null) updates.status = status;
+  if (contractType != null) updates.contractType = contractType;
+  if (commissionRate != null) updates.commissionRate = commissionRate;
+  if (notes != null) updates.notes = notes;
+  const [partner] = await db.update(partnersTable).set(updates as Partial<typeof partnersTable.$inferInsert>).where(eq(partnersTable.id, id)).returning();
+  if (!partner) { res.status(404).json({ error: "Partner not found" }); return; }
+  res.json(partner);
+});
+
+router.delete("/admin/partners/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(partnersTable).where(eq(partnersTable.id, id));
+  res.sendStatus(204);
+});
+
+// ---- Customers (users) ----
+
+router.get("/admin/customers", async (_req, res): Promise<void> => {
+  const customers = await db.select({
+    id: usersTable.id,
+    name: usersTable.name,
+    email: usersTable.email,
+    role: usersTable.role,
+    createdAt: usersTable.createdAt,
+  }).from(usersTable).orderBy(asc(usersTable.createdAt));
+  res.json(customers);
 });
 
 // ---- Page Settings ----

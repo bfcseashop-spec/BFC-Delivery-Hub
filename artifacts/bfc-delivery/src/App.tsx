@@ -22,6 +22,8 @@ import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminRestaurants from "@/pages/admin/AdminRestaurants";
 import AdminMenuItems from "@/pages/admin/AdminMenuItems";
 import AdminLandingPage from "@/pages/admin/AdminLandingPage";
+import AdminPartners from "@/pages/admin/AdminPartners";
+import AdminCustomers from "@/pages/admin/AdminCustomers";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +37,7 @@ function Router() {
       <Route path="/order/:id" component={Order} />
       <Route path="/orders" component={Orders} />
       <Route path="/my-orders" component={MyOrders} />
-      
+
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
 
@@ -44,6 +46,8 @@ function Router() {
       <Route path="/admin/restaurants" component={AdminRestaurants} />
       <Route path="/admin/menu-items" component={AdminMenuItems} />
       <Route path="/admin/landing-page" component={AdminLandingPage} />
+      <Route path="/admin/partners" component={AdminPartners} />
+      <Route path="/admin/customers" component={AdminCustomers} />
 
       <Route component={NotFound} />
     </Switch>
