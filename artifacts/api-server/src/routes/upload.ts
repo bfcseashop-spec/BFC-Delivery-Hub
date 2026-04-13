@@ -50,4 +50,29 @@ router.post(
   }
 );
 
+function requirePartnerOrAdmin(req: Request, res: Response, next: NextFunction): void {
+  const isAdmin = req.session.userId && req.session.userRole === "admin";
+  const partnerId = parseInt(req.params.partnerId);
+  const isOwnSession = req.session.partnerId === partnerId;
+  if (!isAdmin && !isOwnSession) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+  next();
+}
+
+router.post(
+  "/partner/:partnerId/upload",
+  requirePartnerOrAdmin as Parameters<typeof router.use>[0],
+  upload.single("image"),
+  (req: Request, res: Response): void => {
+    if (!req.file) {
+      res.status(400).json({ error: "No file uploaded" });
+      return;
+    }
+    const base = process.env["API_BASE_URL"] ?? "";
+    res.json({ url: `${base}/api/uploads/${req.file.filename}` });
+  }
+);
+
 export default router;
