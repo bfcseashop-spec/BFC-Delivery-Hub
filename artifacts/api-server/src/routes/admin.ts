@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db, ordersTable, restaurantsTable, menuItemsTable, usersTable, promoBannersTable, quickFiltersTable, pageSettingsTable, heroBannersTable, restaurantCategoriesTable, menuItemOptionsTable, partnersTable } from "@workspace/db";
 import { eq, and, asc, type SQL } from "drizzle-orm";
+import bcrypt from "bcrypt";
 import {
   AdminListOrdersResponse,
   AdminUpdateOrderStatusBody,
@@ -456,14 +457,23 @@ router.delete("/admin/landing/filters/:id", async (req, res): Promise<void> => {
 
 router.get("/admin/partners", async (_req, res): Promise<void> => {
   const partners = await db.select().from(partnersTable).orderBy(asc(partnersTable.createdAt));
-  res.json(partners);
+  const safe = partners.map(({ passwordHash, ...p }) => p);
+  res.json(safe);
 });
 
 router.post("/admin/partners", async (req, res): Promise<void> => {
-  const { name, email, phone, businessName, restaurantId, status, contractType, commissionRate, notes } = req.body;
+  const { name, email, phone, businessName, restaurantId, status, contractType, commissionRate, notes, username, password } = req.body;
   if (!name || !email || !businessName) {
     res.status(400).json({ error: "name, email, businessName are required" });
     return;
+  }
+  if (username && !password) {
+    res.status(400).json({ error: "Password is required when setting a username" });
+    return;
+  }
+  let passwordHash = "";
+  if (username && password) {
+    passwordHash = await bcrypt.hash(password, 10);
   }
   const [partner] = await db.insert(partnersTable).values({
     name,
@@ -475,14 +485,17 @@ router.post("/admin/partners", async (req, res): Promise<void> => {
     contractType: contractType ?? "standard",
     commissionRate: commissionRate ?? 15,
     notes: notes ?? "",
+    username: username?.trim() ?? "",
+    passwordHash,
   }).returning();
-  res.status(201).json(partner);
+  const { passwordHash: _ph, ...safe } = partner;
+  res.status(201).json(safe);
 });
 
 router.patch("/admin/partners/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const { name, email, phone, businessName, restaurantId, status, contractType, commissionRate, notes } = req.body;
+  const { name, email, phone, businessName, restaurantId, status, contractType, commissionRate, notes, username, password } = req.body;
   const updates: Record<string, unknown> = {};
   if (name != null) updates.name = name;
   if (email != null) updates.email = email;
@@ -493,9 +506,12 @@ router.patch("/admin/partners/:id", async (req, res): Promise<void> => {
   if (contractType != null) updates.contractType = contractType;
   if (commissionRate != null) updates.commissionRate = commissionRate;
   if (notes != null) updates.notes = notes;
+  if (username != null) updates.username = username.trim();
+  if (password) updates.passwordHash = await bcrypt.hash(password, 10);
   const [partner] = await db.update(partnersTable).set(updates as Partial<typeof partnersTable.$inferInsert>).where(eq(partnersTable.id, id)).returning();
   if (!partner) { res.status(404).json({ error: "Partner not found" }); return; }
-  res.json(partner);
+  const { passwordHash: _ph, ...safe } = partner;
+  res.json(safe);
 });
 
 router.delete("/admin/partners/:id", async (req, res): Promise<void> => {

@@ -1,20 +1,84 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db, partnersTable, restaurantsTable, ordersTable, menuItemsTable } from "@workspace/db";
-import { eq, and, desc, gte, sql } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 const router: IRouter = Router();
 
-function requireAdminOrSelf(req: Request, res: Response, next: NextFunction): void {
-  if (!req.session.userId || req.session.userRole !== "admin") {
-    res.status(403).json({ error: "Admin access required" });
+function requireAdminOrPartner(req: Request, res: Response, next: NextFunction): void {
+  const isAdmin = req.session.userId && req.session.userRole === "admin";
+  const isPartner = !!req.session.partnerId;
+  if (!isAdmin && !isPartner) {
+    res.status(403).json({ error: "Authentication required" });
     return;
   }
   next();
 }
 
-router.use("/partner", requireAdminOrSelf as Parameters<typeof router.use>[0]);
+function requireOwnOrAdmin(req: Request, res: Response, next: NextFunction): void {
+  const isAdmin = req.session.userId && req.session.userRole === "admin";
+  const partnerId = parseInt(req.params.partnerId);
+  const isOwnSession = req.session.partnerId === partnerId;
+  if (!isAdmin && !isOwnSession) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+  next();
+}
 
-router.get("/partner/:partnerId", async (req, res): Promise<void> => {
+/* ── Partner Auth ─────────────────────────────────────────────── */
+
+router.post("/partner/login", async (req, res): Promise<void> => {
+  const { username, password } = req.body ?? {};
+  if (!username || !password) {
+    res.status(400).json({ error: "Username and password required" });
+    return;
+  }
+  const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.username, username.trim()));
+  if (!partner || !partner.passwordHash) {
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
+  const match = await bcrypt.compare(password, partner.passwordHash);
+  if (!match) {
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
+  if (partner.status === "suspended") {
+    res.status(403).json({ error: "Your account has been suspended. Contact support." });
+    return;
+  }
+  req.session.partnerId = partner.id;
+  delete req.session.userId;
+  delete req.session.userRole;
+  res.json({ ok: true, partnerId: partner.id, businessName: partner.businessName });
+});
+
+router.post("/partner/logout", (req, res): void => {
+  req.session.destroy(() => {
+    res.json({ ok: true });
+  });
+});
+
+router.get("/partner/me", async (req, res): Promise<void> => {
+  const isAdmin = req.session.userId && req.session.userRole === "admin";
+  const pid = req.session.partnerId;
+  if (!isAdmin && !pid) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  if (isAdmin) {
+    res.json({ role: "admin" });
+    return;
+  }
+  const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.id, pid!));
+  if (!partner) { res.status(404).json({ error: "Partner not found" }); return; }
+  res.json({ role: "partner", partnerId: partner.id, businessName: partner.businessName, name: partner.name });
+});
+
+/* ── Partner Data Routes (admin or own session) ───────────────── */
+
+router.get("/partner/:partnerId", requireOwnOrAdmin as Parameters<typeof router.use>[0], async (req, res): Promise<void> => {
   const id = parseInt(req.params.partnerId);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.id, id));
@@ -24,14 +88,15 @@ router.get("/partner/:partnerId", async (req, res): Promise<void> => {
     const [r] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, partner.restaurantId));
     restaurant = r ?? null;
   }
-  res.json({ partner, restaurant });
+  const { passwordHash, ...safePartner } = partner;
+  res.json({ partner: safePartner, restaurant });
 });
 
-router.get("/partner/:partnerId/stats", async (req, res): Promise<void> => {
+router.get("/partner/:partnerId/stats", requireOwnOrAdmin as Parameters<typeof router.use>[0], async (req, res): Promise<void> => {
   const id = parseInt(req.params.partnerId);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.id, id));
-  if (!partner?.restaurantId) { res.json({ totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, pendingOrders: 0, completedOrders: 0, commissionOwed: 0 }); return; }
+  if (!partner?.restaurantId) { res.json({ totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, pendingOrders: 0, completedOrders: 0, commissionOwed: 0, daily: [] }); return; }
 
   const orders = await db.select().from(ordersTable).where(eq(ordersTable.restaurantId, partner.restaurantId));
   const totalOrders = orders.length;
@@ -42,7 +107,6 @@ router.get("/partner/:partnerId/stats", async (req, res): Promise<void> => {
   const commissionOwed = totalRevenue * (partner.commissionRate / 100);
 
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const dailyMap: Record<string, { orders: number; revenue: number }> = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
@@ -58,7 +122,7 @@ router.get("/partner/:partnerId/stats", async (req, res): Promise<void> => {
   res.json({ totalOrders, totalRevenue, avgOrderValue, pendingOrders, completedOrders, commissionOwed, daily });
 });
 
-router.get("/partner/:partnerId/orders", async (req, res): Promise<void> => {
+router.get("/partner/:partnerId/orders", requireOwnOrAdmin as Parameters<typeof router.use>[0], async (req, res): Promise<void> => {
   const id = parseInt(req.params.partnerId);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.id, id));
@@ -69,17 +133,16 @@ router.get("/partner/:partnerId/orders", async (req, res): Promise<void> => {
   res.json(orders);
 });
 
-router.get("/partner/:partnerId/menu", async (req, res): Promise<void> => {
+router.get("/partner/:partnerId/menu", requireOwnOrAdmin as Parameters<typeof router.use>[0], async (req, res): Promise<void> => {
   const id = parseInt(req.params.partnerId);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.id, id));
   if (!partner?.restaurantId) { res.json([]); return; }
-  const items = await db.select().from(menuItemsTable)
-    .where(eq(menuItemsTable.restaurantId, partner.restaurantId));
+  const items = await db.select().from(menuItemsTable).where(eq(menuItemsTable.restaurantId, partner.restaurantId));
   res.json(items);
 });
 
-router.get("/partner/:partnerId/invoices", async (req, res): Promise<void> => {
+router.get("/partner/:partnerId/invoices", requireOwnOrAdmin as Parameters<typeof router.use>[0], async (req, res): Promise<void> => {
   const id = parseInt(req.params.partnerId);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const [partner] = await db.select().from(partnersTable).where(eq(partnersTable.id, id));

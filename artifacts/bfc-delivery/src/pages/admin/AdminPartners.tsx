@@ -32,6 +32,7 @@ type Partner = {
   contractType: string;
   commissionRate: number;
   notes: string;
+  username: string;
   createdAt: string;
 };
 
@@ -45,6 +46,8 @@ type FormState = {
   contractType: string;
   commissionRate: string;
   notes: string;
+  username: string;
+  password: string;
 };
 
 const DEFAULT_FORM: FormState = {
@@ -57,6 +60,8 @@ const DEFAULT_FORM: FormState = {
   contractType: "standard",
   commissionRate: "15",
   notes: "",
+  username: "",
+  password: "",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -97,6 +102,8 @@ function PartnerDialog({
         contractType: p.contractType,
         commissionRate: String(p.commissionRate),
         notes: p.notes,
+        username: p.username ?? "",
+        password: "",
       });
     } else {
       setForm(DEFAULT_FORM);
@@ -112,7 +119,7 @@ function PartnerDialog({
 
     setSaving(true);
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
@@ -122,7 +129,9 @@ function PartnerDialog({
         contractType: form.contractType,
         commissionRate: parseFloat(form.commissionRate) || 15,
         notes: form.notes.trim(),
+        username: form.username.trim(),
       };
+      if (form.password) body.password = form.password;
 
       const r = editing
         ? await api(`/admin/partners/${editing.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -228,6 +237,37 @@ function PartnerDialog({
           <div className="space-y-1.5">
             <Label>Notes</Label>
             <Textarea rows={2} placeholder="Any additional notes about this partner…" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          </div>
+
+          {/* Login Credentials */}
+          <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50 dark:bg-zinc-900/50 space-y-3">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Partner Portal Login</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Username</Label>
+                <Input
+                  placeholder="e.g. bkk_khmer"
+                  value={form.username}
+                  onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Password {editing && <span className="font-normal text-muted-foreground text-xs">(leave blank to keep)</span>}
+                </Label>
+                <Input
+                  type="password"
+                  placeholder={editing ? "••••••••" : "Set a password"}
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Partners use these credentials to log in at <code className="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[11px]">/partner/login</code>
+            </p>
           </div>
         </div>
 

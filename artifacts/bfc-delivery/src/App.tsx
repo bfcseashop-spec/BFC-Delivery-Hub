@@ -16,6 +16,7 @@ import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
+import PartnerLogin from "@/pages/auth/PartnerLogin";
 
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminOrders from "@/pages/admin/AdminOrders";
@@ -53,6 +54,7 @@ function Router() {
 
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/partner/login" component={PartnerLogin} />
 
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/orders" component={AdminOrders} />

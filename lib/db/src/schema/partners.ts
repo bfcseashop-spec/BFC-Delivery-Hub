@@ -13,6 +13,8 @@ export const partnersTable = pgTable("partners", {
   contractType: text("contract_type").notNull().default("standard"),
   commissionRate: real("commission_rate").notNull().default(15),
   notes: text("notes").notNull().default(""),
+  username: text("username").notNull().default(""),
+  passwordHash: text("password_hash").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
