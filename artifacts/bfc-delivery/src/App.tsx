@@ -22,6 +22,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminRestaurants from "@/pages/admin/AdminRestaurants";
 import AdminMenuItems from "@/pages/admin/AdminMenuItems";
+import AdminCategories from "@/pages/admin/AdminCategories";
 import AdminLandingPage from "@/pages/admin/AdminLandingPage";
 import AdminPartners from "@/pages/admin/AdminPartners";
 import AdminCustomers from "@/pages/admin/AdminCustomers";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/restaurants" component={AdminRestaurants} />
       <Route path="/admin/menu-items" component={AdminMenuItems} />
+      <Route path="/admin/categories" component={AdminCategories} />
       <Route path="/admin/landing-page" component={AdminLandingPage} />
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/customers" component={AdminCustomers} />

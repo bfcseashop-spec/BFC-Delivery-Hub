@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Store, ClipboardList, UtensilsCrossed, LogOut,
-  LayoutTemplate, Handshake, Users, ChevronRight,
+  LayoutTemplate, Handshake, Users, ChevronRight, FolderOpen,
 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -23,6 +23,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/restaurants", label: "Restaurants", icon: <Store className="w-4 h-4" /> },
       { href: "/admin/menu-items", label: "Menu Items", icon: <UtensilsCrossed className="w-4 h-4" /> },
+      { href: "/admin/categories", label: "Categories", icon: <FolderOpen className="w-4 h-4" /> },
     ],
   },
   {
